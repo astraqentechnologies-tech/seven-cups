@@ -1,93 +1,191 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode
+} from 'react'
 
-type AuthContextType = {
-  user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-  isAdmin: boolean;
-};
+const API_BASE_URL = 'http://127.0.0.1:8000/api'
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    if (data) setProfile(data as Profile);
-  };
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        (async () => { await fetchProfile(session.user.id); })();
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    return { error: error as Error | null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-  };
-
-  const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
-  };
-
-  return (
-    <AuthContext.Provider value={{
-      user, session, profile, loading,
-      signUp, signIn, signOut, refreshProfile,
-      isAdmin: profile?.role === 'admin',
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+export type UserType = {
+  id: number
+  name: string
+  email: string
+  role: 'customer' | 'admin'
+  created_at: string
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+type AuthContextType = {
+  user: UserType | null
+  token: string | null
+  profile: UserType | null
+  loading: boolean
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string
+  ) => Promise<{ error: Error | null }>
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>
+  signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
+  isAdmin: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider ({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<UserType | null>(null)
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem('luminary_token')
+  )
+  const [loading, setLoading] = useState(true)
+
+  // Fetch profiles from Laravel API
+  const fetchProfile = async (authToken: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          Accept: 'application/json'
+        }
+      })
+      if (res.ok) {
+        const userData = await res.json()
+        setUser(userData)
+      } else {
+        localStorage.removeItem('luminary_token')
+        setToken(null)
+        setUser(null)
+      }
+    } catch (err) {
+      console.error('Failed to restore user session context:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (token) {
+      fetchProfile(token)
+    } else {
+      setLoading(false)
+    }
+  }, [token])
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+          password_confirmation: password
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (data.errors) {
+          const firstErrorKey = Object.keys(data.errors)[0]
+          throw new Error(data.errors[firstErrorKey][0])
+        }
+        throw new Error(data.message || 'Registration failed.')
+      }
+
+      localStorage.setItem('luminary_token', data.token)
+      setUser(data.user)
+      setToken(data.token) // Crucial: Set user data first, then trigger token effect change
+      setLoading(false)
+      return { error: null }
+    } catch (error: any) {
+      setLoading(false)
+      return { error: error as Error }
+    }
+  }
+
+  const signIn = async (email: string, password: string) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (data.errors) {
+          const firstErrorKey = Object.keys(data.errors)[0]
+          throw new Error(data.errors[firstErrorKey][0])
+        }
+        throw new Error(data.message || 'Invalid credentials.')
+      }
+
+      localStorage.setItem('luminary_token', data.token)
+      setUser(data.user)
+      setToken(data.token)
+      setLoading(false)
+      return { error: null }
+    } catch (error: any) {
+      setLoading(false)
+      return { error: error as Error }
+    }
+  }
+
+  const signOut = async () => {
+    setLoading(true)
+    if (token) {
+      await fetch(`${API_BASE_URL}/logout`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
+        }
+      }).catch(() => {})
+    }
+    localStorage.removeItem('luminary_token')
+    setUser(null)
+    setToken(null)
+    setLoading(false)
+  }
+
+  const refreshProfile = async () => {
+    if (token) await fetchProfile(token)
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        profile: user, // Dynamically tracks state updates instantly now
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        refreshProfile,
+        isAdmin: user?.role === 'admin'
+      }}
+    >
+      {!loading && children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth () {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
 }
