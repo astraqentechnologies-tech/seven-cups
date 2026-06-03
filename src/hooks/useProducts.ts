@@ -30,7 +30,7 @@ export interface Category {
   image_url: string | null
 }
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
 
 export function useProducts (filters?: {
   categorySlug?: string
