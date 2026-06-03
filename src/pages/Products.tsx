@@ -55,7 +55,7 @@ export default function Products ({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const { categories } = useCategories() as { categories: Category[] }
 
-  const API_BASE_URL = 'http://localhost:8000/api'
+  const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
 
   useEffect(() => {
     setLoading(true)

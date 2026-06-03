@@ -105,7 +105,7 @@ export default function Home ({ onNavigate }: Props) {
   const [newArrivals, setNewArrivals] = useState<Product[]>([])
   const [bestSellers, setBestSellers] = useState<Product[]>([])
 
-  const API_BASE_URL = 'http://localhost:8000/api'
+  const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
 
   useEffect(() => {
     const fetchWithCheck = (url: string, setter: (data: any) => void) => {

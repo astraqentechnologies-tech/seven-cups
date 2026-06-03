@@ -44,7 +44,7 @@ export default function ProductDetail({ slug, onNavigate }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
-  const API_BASE_URL = 'http://localhost:8000/api'
+  const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
 
   // ROBUST HYPER-DEFENSIVE UNWRAPPING ENGINE
   const getUnwrappedProduct = () => {
