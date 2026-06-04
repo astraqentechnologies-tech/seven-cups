@@ -114,7 +114,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const res = await fetch('https://www.astraqentechnologies.com/sevencups/api/login', {
+      const res = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
