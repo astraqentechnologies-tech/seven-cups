@@ -15,7 +15,7 @@ type Props = {
   onNavigate: (page: string) => void
 }
 
-const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 interface Product {
   id: number
@@ -54,10 +54,12 @@ export default function Account ({ onNavigate }: Props) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
 
+  // Aligned form state explicitly with Laravel expectations
   const [form, setForm] = useState({
     name: '',
+    email: '',
     phone: '',
-    address: '',
+    street_address: '',
     city: '',
     country: ''
   })
@@ -81,29 +83,36 @@ export default function Account ({ onNavigate }: Props) {
     }
   }, [token])
 
-  // 2. FIXED: Dynamically compute display fields whenever context profile or backend orders update
+  // 2. Compute display fields mapping safely to profile or order database layouts
   const latestOrder = orders[0]
 
   const displayInfo = {
     name: profile?.name || user?.name || latestOrder?.full_name || '—',
     phone: profile?.phone || latestOrder?.phone || '—',
-    address: profile?.address || latestOrder?.street_address || '—',
+    address:
+      profile?.address ||
+      profile?.street_address ||
+      latestOrder?.street_address ||
+      '—',
     city: profile?.city || latestOrder?.city || '—',
     country: profile?.country || latestOrder?.country || '—'
   }
 
-  // Pre-populate input form fields when turning on edit mode
+  const displayEmail = profile?.email || user?.email || ''
+
+  // Pre-populate input form fields when turning on edit mode safely
   useEffect(() => {
     if (!editing) {
       setForm({
         name: displayInfo.name !== '—' ? displayInfo.name : '',
+        email: displayEmail,
         phone: displayInfo.phone !== '—' ? displayInfo.phone : '',
-        address: displayInfo.address !== '—' ? displayInfo.address : '',
+        street_address: displayInfo.address !== '—' ? displayInfo.address : '',
         city: displayInfo.city !== '—' ? displayInfo.city : '',
         country: displayInfo.country !== '—' ? displayInfo.country : ''
       })
     }
-  }, [editing, orders, profile, user])
+  }, [editing, orders, profile, user, displayInfo.name, displayEmail])
 
   if (!user) {
     return (
@@ -155,8 +164,6 @@ export default function Account ({ onNavigate }: Props) {
       setSaving(false)
     }
   }
-
-  const displayEmail = profile?.email || user?.email || ''
 
   return (
     <div className='min-h-screen bg-stone-50 pt-20'>
@@ -239,7 +246,7 @@ export default function Account ({ onNavigate }: Props) {
                     },
                     {
                       label: 'Street Address',
-                      key: 'address',
+                      key: 'street_address', // Corrected key mapping
                       placeholder: '123 Garden St',
                       span: 2
                     },
