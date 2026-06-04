@@ -14,6 +14,10 @@ export type UserType = {
   email: string
   role: 'customer' | 'admin'
   created_at: string
+  phone?: string
+  address?: string
+  city?: string
+  country?: string
 }
 
 type AuthContextType = {
@@ -40,6 +44,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
     localStorage.getItem('luminary_token')
   )
   const [loading, setLoading] = useState(true)
+  const [profileData, setProfileData] = useState<Partial<UserType> | null>(null)
 
   // Fetch profiles from Laravel API
   const fetchProfile = async (authToken: string) => {
@@ -68,6 +73,23 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (token) {
       fetchProfile(token)
+      // Also fetch extended profile data
+      fetch(`${API_BASE_URL}/user/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setProfileData({
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            country: data.country
+          })
+        })
+        .catch(err => console.error('Failed to fetch profile data:', err))
     } else {
       setLoading(false)
     }
@@ -158,11 +180,34 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
     localStorage.removeItem('luminary_token')
     setUser(null)
     setToken(null)
+    setProfileData(null)
     setLoading(false)
   }
 
   const refreshProfile = async () => {
-    if (token) await fetchProfile(token)
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/user/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setProfileData({
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            country: data.country
+          })
+          // Also refetch user info to keep it in sync
+          await fetchProfile(token)
+        }
+      } catch (err) {
+        console.error('Failed to refresh profile:', err)
+      }
+    }
   }
 
   return (
@@ -170,7 +215,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
       value={{
         user,
         token,
-        profile: user, // Dynamically tracks state updates instantly now
+        profile: user ? { ...user, ...profileData } : null,
         loading,
         signUp,
         signIn,

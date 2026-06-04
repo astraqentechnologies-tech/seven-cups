@@ -182,7 +182,7 @@ export default function Account ({ onNavigate }: Props) {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'profile' | 'orders')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-stone-900 text-white shadow-sm'
@@ -306,9 +306,9 @@ export default function Account ({ onNavigate }: Props) {
                   {
                     label: 'Member Since',
                     value:
-                      profile?.created_at || (user as any)?.created_at
+                      profile?.created_at || user?.created_at
                         ? new Date(
-                            profile?.created_at || (user as any).created_at
+                            (profile?.created_at || user?.created_at) as string
                           ).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long'
