@@ -3,6 +3,8 @@ import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
 import { useCategories } from '../hooks/useProducts'
 
+
+
 type Props = {
   onNavigate: (page: string, params?: Record<string, string>) => void
   initialCategory?: string
@@ -55,7 +57,8 @@ export default function Products ({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const { categories } = useCategories() as { categories: Category[] }
 
-  const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     setLoading(true)
