@@ -1,6 +1,5 @@
 import { Leaf, Instagram, Facebook, Twitter, Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
 
 type Props = {
   onNavigate: (page: string) => void;

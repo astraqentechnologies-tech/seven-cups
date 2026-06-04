@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Package, ChevronRight, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { supabase, Order } from '../lib/supabase'
 
 type Props = {
   onNavigate: (page: string) => void
