@@ -5,7 +5,7 @@ import {
   Menu,
   X,
   Search,
-  Leaf,
+  Coffee,
   ChevronDown
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -52,15 +52,15 @@ export default function Header ({ currentPage, onNavigate }: Props) {
               onClick={() => onNavigate('home')}
               className='flex items-center gap-2 group'
             >
-              <div className='w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-400 transition-colors'>
-                <Leaf className='w-5 h-5 text-stone-900' />
+                <div className='w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-400 transition-colors'>
+                <Coffee className='w-5 h-5 text-stone-900' />
               </div>
               <div className='flex flex-col leading-none'>
                 <span className='text-stone-900 font-bold text-xl tracking-wide font-serif'>
-                  Luminary
+                  sevencups
                 </span>
                 <span className='text-amber-600 text-[10px] tracking-[0.3em] uppercase font-semibold'>
-                  Fine Teas
+                  Tea Co
                 </span>
               </div>
             </button>
