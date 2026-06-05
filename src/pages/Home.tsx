@@ -174,36 +174,7 @@ export default function Home ({ onNavigate }: Props) {
           </div>
         ))}
         {/* Flex layout container aligned within the 600px height limit */}
-        <div className='relative z-10 h-full flex items-center max-w-7xl mx-auto px-6 w-full'>
-          <div className='max-w-2xl'>
-            <div className='flex items-center gap-2 mb-6'>
-              <span className='h-px w-10 bg-amber-400' />
-              <span className='text-amber-400 text-sm font-medium tracking-[0.2em] uppercase'>
-                sevencups Tea Co
-              </span>
-            </div>
-            <h1 className='text-4xl md:text-6xl font-bold text-white font-serif leading-tight mb-4'>
-              {activeHero.title}
-            </h1>
-            <p className='text-stone-200 text-base md:text-lg leading-relaxed mb-8 max-w-lg'>
-              {activeHero.subtitle}
-            </p>
-            <div className='flex flex-wrap gap-4'>
-              <button
-                onClick={() => onNavigate('products')}
-                className='flex items-center gap-2 px-8 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-amber-500/30'
-              >
-                {activeHero.cta} <ArrowRight className='w-4 h-4' />
-              </button>
-              <button
-                onClick={() => onNavigate('about')}
-                className='flex items-center gap-2 px-8 py-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all'
-              >
-                <Play className='w-4 h-4' /> Our Story
-              </button>
-            </div>
-          </div>
-        </div>
+       
       </section>
 
       {/* Stats row */}
