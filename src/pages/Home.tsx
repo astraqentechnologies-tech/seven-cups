@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
+  Star,
+  ChevronLeft,
+  ChevronRight,
   Play
 } from 'lucide-react'
 import ProductCard from '../components/ProductCard'
@@ -46,7 +49,8 @@ const defaultHeroBanners: HeroBanner[] = [
   },
   {
     title: 'New Season, New Arrivals',
-    subtitle: 'Spring harvests from the misty highlands of Japan and Darjeeling.',
+    subtitle:
+      'Spring harvests from the misty highlands of Japan and Darjeeling.',
     cta: 'Shop New Arrivals',
     image: 'https://images.pexels.com/photos/3887985/pexels-photo-3887985.jpeg',
     accent: 'from-stone-900/80 via-stone-900/40 to-transparent'
@@ -106,40 +110,34 @@ export default function Home ({ onNavigate }: Props) {
   const [heroBanners, setHeroBanners] = useState<HeroBanner[]>(defaultHeroBanners)
   const [categories, setCategories] = useState<Category[]>([])
   const [featured, setFeatured] = useState<Product[]>([])
+  const [newArrivals, setNewArrivals] = useState<Product[]>([])
+  const [bestSellers, setBestSellers] = useState<Product[]>([])
 
   const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
 
   useEffect(() => {
-    const fetchWithCheck = (url: string, setter: (data: any) => void, isHero = false) => {
+    const fetchWithCheck = (url: string, setter: (data: any) => void) => {
       fetch(url)
         .then(res => {
-          if (!res.ok) throw new Error(`Server responded with status ${res.status}`)
+          if (!res.ok)
+            throw new Error(`Server responded with status ${res.status}`)
           return res.json()
         })
-        .then(data => {
-          const parsedData = Array.isArray(data) ? data : data?.data || []
-          
-          // If dealing with the hero-banner data, ensure it contains premium content and not plain placeholders
-          if (isHero) {
-            const hasPlaceholders = parsedData.some((item: any) => 
-              item?.title?.toLowerCase().includes('banner') || item?.title?.toLowerCase().includes('tiitle')
-            )
-            if (hasPlaceholders || parsedData.length === 0) {
-              setter(defaultHeroBanners)
-              return
-            }
-          }
-          setter(parsedData)
-        })
-        .catch(err => {
-          console.error(`Error fetching from ${url}:`, err)
-          if (isHero) setter(defaultHeroBanners)
-        })
+        .then(data => setter(Array.isArray(data) ? data : data?.data || []))
+        .catch(err => console.error(`Error fetching from ${url}:`, err))
     }
 
-    fetchWithCheck(`${API_BASE_URL}/hero-banner`, setHeroBanners, true)
+    fetchWithCheck(`${API_BASE_URL}/hero-banner`, setHeroBanners)
     fetchWithCheck(`${API_BASE_URL}/categories`, setCategories)
     fetchWithCheck(`${API_BASE_URL}/products?featured=1&limit=4`, setFeatured)
+    fetchWithCheck(
+      `${API_BASE_URL}/products?new_arrival=1&limit=4`,
+      setNewArrivals
+    )
+    fetchWithCheck(
+      `${API_BASE_URL}/products?best_seller=1&limit=4`,
+      setBestSellers
+    )
   }, [])
 
   useEffect(() => {
@@ -147,50 +145,44 @@ export default function Home ({ onNavigate }: Props) {
 
     intervalRef.current = setInterval(
       () => setHeroIdx(i => (i + 1) % heroBanners.length),
-      6000
+      5500
     )
     return () => clearInterval(intervalRef.current)
   }, [heroBanners.length])
 
-  // Guaranteed premium content fallback strategy
-  const activeHeroRaw = heroBanners[heroIdx] || heroBanners[0] || defaultHeroBanners[0]
-  const isPlaceholder = activeHeroRaw?.title?.toLowerCase().includes('banner') || activeHeroRaw?.title?.toLowerCase().includes('tiitle')
-  
-  const activeHero = isPlaceholder ? defaultHeroBanners[heroIdx] || defaultHeroBanners[0] : activeHeroRaw
+  const activeHero = heroBanners[heroIdx] || heroBanners[0] || defaultHeroBanners[0]
 
   return (
     <div className='min-h-screen bg-stone-50'>
       {/* Hero Section */}
       <section className='relative w-full max-w-[1920px] h-[600px] mx-auto overflow-hidden bg-stone-900'>
-        {heroBanners.map((b, i) => {
-          // Sync image with premium fallback if API returns placeholder text
-          const currentImg = isPlaceholder ? defaultHeroBanners[i]?.image || b.image : b.image
-          return (
-            <div
-              key={i}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                i === heroIdx ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <img
-                src={currentImg}
-                alt={activeHero.title}
-                className='w-full h-[600px] object-cover scale-105 transition-transform duration-[6000ms] ease-out-quad'
-              />
-              <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
-            </div>
-          )
-        })}
-
+        {heroBanners.map((b, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              i === heroIdx ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {/* Explicit sizing limits to 1920x600px view */}
+            <img
+              src={b.image}
+              alt={b.title}
+              className='w-full h-[600px] object-cover scale-105'
+            />
+            {/* Solid dark gradient overlay instead of dynamic transparent accent classes */}
+            <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
+          </div>
+        ))}
+        {/* Flex layout container aligned within the 600px height limit */}
         <div className='relative z-10 h-full flex items-center max-w-7xl mx-auto px-6 w-full'>
           <div className='max-w-2xl'>
             <div className='flex items-center gap-2 mb-6'>
               <span className='h-px w-10 bg-amber-400' />
               <span className='text-amber-400 text-sm font-medium tracking-[0.2em] uppercase'>
-                Sevencups Tea Co
+                sevencups Tea Co
               </span>
             </div>
-            <h1 className='text-4xl md:text-6xl font-bold text-white font-serif leading-tight mb-4 capitalize'>
+            <h1 className='text-4xl md:text-6xl font-bold text-white font-serif leading-tight mb-4'>
               {activeHero.title}
             </h1>
             <p className='text-stone-200 text-base md:text-lg leading-relaxed mb-8 max-w-lg'>
@@ -205,9 +197,9 @@ export default function Home ({ onNavigate }: Props) {
               </button>
               <button
                 onClick={() => onNavigate('about')}
-                className='flex items-center gap-2 px-8 py-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all hover:scale-105'
+                className='flex items-center gap-2 px-8 py-3 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all'
               >
-                <Play className='w-4 h-4 fill-white/20' /> Our Story
+                <Play className='w-4 h-4' /> Our Story
               </button>
             </div>
           </div>
@@ -263,7 +255,7 @@ export default function Home ({ onNavigate }: Props) {
                 />
                 <div className='absolute inset-0 bg-gradient-to-t from-stone-900/80 via-stone-900/20 to-transparent' />
                 <div className='absolute bottom-0 left-0 right-0 p-4'>
-                  <p className='text-white font-semibold text-sm font-serif leading-tight capitalize'>
+                  <p className='text-white font-semibold text-sm font-serif leading-tight'>
                     {cat.name}
                   </p>
                 </div>
@@ -273,7 +265,7 @@ export default function Home ({ onNavigate }: Props) {
         </div>
       </section>
 
-      {/* Render Featured Product Panels */}
+      {/* Render Product Panels */}
       {featured.length > 0 && (
         <section className='py-20 bg-stone-50'>
           <div className='max-w-7xl mx-auto px-6'>
