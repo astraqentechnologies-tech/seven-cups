@@ -155,11 +155,11 @@ export default function Home ({ onNavigate }: Props) {
   return (
     <div className='min-h-screen bg-stone-50'>
       {/* Hero Section */}
-      <section className='relative w-full max-w-[1920px] h-[600px] mx-auto overflow-hidden bg-stone-900'>
+      <section className='relative w-full max-w-[1920px] h-[388px] mx-auto overflow-hidden bg-stone-900'>
         {heroBanners.map((b, i) => (
           <div
             key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
+            className={`absolute transition-opacity duration-1000 ${
               i === heroIdx ? 'opacity-100' : 'opacity-0'
             }`}
           >
