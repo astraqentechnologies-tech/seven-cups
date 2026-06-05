@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
   Star,
-  Leaf,
   ChevronLeft,
   ChevronRight,
   Play
@@ -32,7 +31,15 @@ interface Product {
   is_best_seller: boolean
 }
 
-const teaFactBanners = [
+interface HeroBanner {
+  title: string
+  subtitle: string
+  cta: string
+  image: string
+  accent?: string
+}
+
+const defaultHeroBanners: HeroBanner[] = [
   {
     title: 'Discover the Art of Tea',
     subtitle: 'Sourced from ancient gardens, crafted with centuries of wisdom.',
@@ -100,6 +107,7 @@ export default function Home ({ onNavigate }: Props) {
   const [heroIdx, setHeroIdx] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
 
+  const [heroBanners, setHeroBanners] = useState<HeroBanner[]>(defaultHeroBanners)
   const [categories, setCategories] = useState<Category[]>([])
   const [featured, setFeatured] = useState<Product[]>([])
   const [newArrivals, setNewArrivals] = useState<Product[]>([])
@@ -119,6 +127,7 @@ export default function Home ({ onNavigate }: Props) {
         .catch(err => console.error(`Error fetching from ${url}:`, err))
     }
 
+    fetchWithCheck(`${API_BASE_URL}/hero-banner`, setHeroBanners)
     fetchWithCheck(`${API_BASE_URL}/categories`, setCategories)
     fetchWithCheck(`${API_BASE_URL}/products?featured=1&limit=4`, setFeatured)
     fetchWithCheck(
@@ -132,18 +141,22 @@ export default function Home ({ onNavigate }: Props) {
   }, [])
 
   useEffect(() => {
+    if (!heroBanners.length) return
+
     intervalRef.current = setInterval(
-      () => setHeroIdx(i => (i + 1) % teaFactBanners.length),
+      () => setHeroIdx(i => (i + 1) % heroBanners.length),
       5500
     )
     return () => clearInterval(intervalRef.current)
-  }, [])
+  }, [heroBanners.length])
+
+  const activeHero = heroBanners[heroIdx] || heroBanners[0] || defaultHeroBanners[0]
 
   return (
     <div className='min-h-screen bg-stone-50'>
       {/* Hero Section */}
       <section className='relative w-full max-w-[1920px] h-[600px] mx-auto overflow-hidden bg-stone-900'>
-        {teaFactBanners.map((b, i) => (
+        {heroBanners.map((b, i) => (
           <div
             key={i}
             className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -166,21 +179,21 @@ export default function Home ({ onNavigate }: Props) {
             <div className='flex items-center gap-2 mb-6'>
               <span className='h-px w-10 bg-amber-400' />
               <span className='text-amber-400 text-sm font-medium tracking-[0.2em] uppercase'>
-                Luminary Fine Teas
+                sevencups Tea Co
               </span>
             </div>
             <h1 className='text-4xl md:text-6xl font-bold text-white font-serif leading-tight mb-4'>
-              {teaFactBanners[heroIdx].title}
+              {activeHero.title}
             </h1>
             <p className='text-stone-200 text-base md:text-lg leading-relaxed mb-8 max-w-lg'>
-              {teaFactBanners[heroIdx].subtitle}
+              {activeHero.subtitle}
             </p>
             <div className='flex flex-wrap gap-4'>
               <button
                 onClick={() => onNavigate('products')}
                 className='flex items-center gap-2 px-8 py-3 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-amber-500/30'
               >
-                {teaFactBanners[heroIdx].cta} <ArrowRight className='w-4 h-4' />
+                {activeHero.cta} <ArrowRight className='w-4 h-4' />
               </button>
               <button
                 onClick={() => onNavigate('about')}
