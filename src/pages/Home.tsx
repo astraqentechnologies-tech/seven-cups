@@ -167,7 +167,7 @@ export default function Home ({ onNavigate }: Props) {
             <img
               src={b.image}
               alt={b.title}
-              className='w-full h-[600px] object-cover scale-105'
+              className='w-full object-cover scale-105'
             />
             {/* Solid dark gradient overlay instead of dynamic transparent accent classes */}
             <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
