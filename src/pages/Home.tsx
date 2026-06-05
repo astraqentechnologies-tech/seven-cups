@@ -169,8 +169,7 @@ export default function Home ({ onNavigate }: Props) {
               alt={b.title}
               className='w-full object-cover scale-105'
             />
-            {/* Solid dark gradient overlay instead of dynamic transparent accent classes */}
-            <div className='absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent' />
+           
           </div>
         ))}
         {/* Flex layout container aligned within the 600px height limit */}
