@@ -155,7 +155,7 @@ export default function Home ({ onNavigate }: Props) {
   return (
     <div className='min-h-screen bg-stone-50'>
       {/* Hero Section */}
-      <section className='relative w-full max-w-[1920px] h-[600px] mx-auto overflow-hidden bg-stone-900'>
+      <section className='relative w-full max-w-[1920px] h-auto mx-auto overflow-hidden bg-stone-900'>
         {heroBanners.map((b, i) => (
           <div
             key={i}
