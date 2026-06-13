@@ -6,12 +6,9 @@ import {
   CreditCard,
   ChevronLeft
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-
-type Props = {
-  onNavigate: (page: string) => void
-}
 
 type ShippingForm = {
   name: string
@@ -40,7 +37,8 @@ const countries = [
   'Other'
 ]
 
-export default function Checkout ({ onNavigate }: Props) {
+export default function Checkout () {
+  const navigate = useNavigate()
   const { user, token, profile } = useAuth()
   const { items, localItems, total, clearCart } = useCart()
   const [step, setStep] = useState(1)
@@ -70,7 +68,7 @@ export default function Checkout ({ onNavigate }: Props) {
             Please sign in to complete your purchase.
           </p>
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => navigate('/auth')}
             className='px-8 py-4 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
           >
             Sign In
@@ -80,7 +78,6 @@ export default function Checkout ({ onNavigate }: Props) {
     )
   }
 
-  // FIXED: Normalizes item configurations safely from Laravel backend OR guest local records
   const displayItems = items.map(item => {
     const productData = item.products || (item as any).product
     return {
@@ -97,7 +94,6 @@ export default function Checkout ({ onNavigate }: Props) {
   const shipping = total >= 50 ? 0 : 5.99
   const grandTotal = total + shipping
 
-  // FIXED: Migrated from old Supabase insertion blocks to your unified Laravel REST endpoint
   const handlePlaceOrder = async () => {
     if (displayItems.length === 0) return
     setPlacing(true)
@@ -161,9 +157,7 @@ export default function Checkout ({ onNavigate }: Props) {
           </p>
           <div className='bg-white border border-stone-100 rounded-2xl px-6 py-4 inline-block mb-8'>
             <p className='text-stone-500 text-sm'>Order Reference</p>
-            <p className='text-stone-900 font-bold text-xl font-mono'>
-              {orderId}
-            </p>
+            <p className='text-stone-900 font-bold text-xl font-mono'>{orderId}</p>
           </div>
           <p className='text-stone-400 text-sm mb-10'>
             A confirmation will be sent to <strong>{form.email}</strong>. Your
@@ -171,13 +165,13 @@ export default function Checkout ({ onNavigate }: Props) {
           </p>
           <div className='flex gap-4 justify-center'>
             <button
-              onClick={() => onNavigate('orders')}
+              onClick={() => navigate('/account')}
               className='px-8 py-4 bg-stone-900 hover:bg-amber-600 text-white font-bold rounded-full transition-all'
             >
               Track My Order
             </button>
             <button
-              onClick={() => onNavigate('products')}
+              onClick={() => navigate('/products')}
               className='px-8 py-4 border border-stone-200 text-stone-700 font-semibold rounded-full hover:border-amber-400 hover:text-amber-700 transition-all'
             >
               Continue Shopping
@@ -201,27 +195,17 @@ export default function Checkout ({ onNavigate }: Props) {
               <div className='flex items-center gap-2'>
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                    step >= s.n
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-stone-200 text-stone-500'
+                    step >= s.n ? 'bg-stone-900 text-white' : 'bg-stone-200 text-stone-500'
                   }`}
                 >
                   {step > s.n ? <CheckCircle className='w-5 h-5' /> : s.n}
                 </div>
-                <span
-                  className={`text-sm font-medium ${
-                    step >= s.n ? 'text-stone-900' : 'text-stone-400'
-                  }`}
-                >
+                <span className={`text-sm font-medium ${step >= s.n ? 'text-stone-900' : 'text-stone-400'}`}>
                   {s.label}
                 </span>
               </div>
               {i < 1 && (
-                <div
-                  className={`w-16 h-0.5 ${
-                    step > s.n ? 'bg-stone-900' : 'bg-stone-200'
-                  }`}
-                />
+                <div className={`w-16 h-0.5 ${step > s.n ? 'bg-stone-900' : 'bg-stone-200'}`} />
               )}
             </div>
           ))}
@@ -232,84 +216,42 @@ export default function Checkout ({ onNavigate }: Props) {
           <div className='lg:col-span-3'>
             {step === 1 && (
               <div className='bg-white rounded-3xl border border-stone-100 p-8 shadow-sm'>
-                <h2 className='text-2xl font-bold text-stone-900 font-serif mb-7'>
-                  Shipping Details
-                </h2>
+                <h2 className='text-2xl font-bold text-stone-900 font-serif mb-7'>Shipping Details</h2>
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
                   {[
-                    {
-                      label: 'Full Name',
-                      key: 'name',
-                      placeholder: 'Your name',
-                      span: 2
-                    },
-                    {
-                      label: 'Email',
-                      key: 'email',
-                      placeholder: 'you@example.com',
-                      type: 'email'
-                    },
-                    {
-                      label: 'Phone',
-                      key: 'phone',
-                      placeholder: '+1 555 000 0000'
-                    },
-                    {
-                      label: 'Street Address',
-                      key: 'address',
-                      placeholder: '123 Garden St',
-                      span: 2
-                    },
-                    {
-                      label: 'City',
-                      key: 'city',
-                      placeholder: 'San Francisco'
-                    },
+                    { label: 'Full Name', key: 'name', placeholder: 'Your name', span: 2 },
+                    { label: 'Email', key: 'email', placeholder: 'you@example.com', type: 'email' },
+                    { label: 'Phone', key: 'phone', placeholder: '+1 555 000 0000' },
+                    { label: 'Street Address', key: 'address', placeholder: '123 Garden St', span: 2 },
+                    { label: 'City', key: 'city', placeholder: 'San Francisco' },
                     { label: 'ZIP / Postal', key: 'zip', placeholder: '94102' }
                   ].map(field => (
-                    <div
-                      key={field.key}
-                      className={field.span === 2 ? 'col-span-2' : ''}
-                    >
-                      <label className='block text-stone-600 text-sm font-medium mb-2'>
-                        {field.label}
-                      </label>
+                    <div key={field.key} className={field.span === 2 ? 'col-span-2' : ''}>
+                      <label className='block text-stone-600 text-sm font-medium mb-2'>{field.label}</label>
                       <input
                         type={field.type || 'text'}
                         value={(form as Record<string, string>)[field.key]}
-                        onChange={e =>
-                          setForm(f => ({ ...f, [field.key]: e.target.value }))
-                        }
+                        onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
                         placeholder={field.placeholder}
                         className='w-full px-4 py-3.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 text-sm outline-none focus:border-amber-400 focus:bg-white transition-all'
                       />
                     </div>
                   ))}
                   <div className='col-span-2'>
-                    <label className='block text-stone-600 text-sm font-medium mb-2'>
-                      Country
-                    </label>
+                    <label className='block text-stone-600 text-sm font-medium mb-2'>Country</label>
                     <select
                       value={form.country}
-                      onChange={e =>
-                        setForm(f => ({ ...f, country: e.target.value }))
-                      }
+                      onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
                       className='w-full px-4 py-3.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 text-sm outline-none focus:border-amber-400 appearance-none'
                     >
-                      {countries.map(c => (
-                        <option key={c}>{c}</option>
-                      ))}
+                      {countries.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className='col-span-2'>
-                    <label className='block text-stone-600 text-sm font-medium mb-2'>
-                      Order Notes (optional)
-                    </label>
+                    <label className='block text-stone-600 text-sm font-medium mb-2'>Order Notes (optional)</label>
                     <textarea
                       value={form.notes}
-                      onChange={e =>
-                        setForm(f => ({ ...f, notes: e.target.value }))
-                      }
+                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                       placeholder='Special instructions, gift message...'
                       rows={3}
                       className='w-full px-4 py-3.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 text-sm outline-none focus:border-amber-400 resize-none'
@@ -334,61 +276,40 @@ export default function Checkout ({ onNavigate }: Props) {
                 >
                   <ChevronLeft className='w-4 h-4' /> Edit Shipping
                 </button>
-                <h2 className='text-2xl font-bold text-stone-900 font-serif mb-6'>
-                  Review & Payment
-                </h2>
+                <h2 className='text-2xl font-bold text-stone-900 font-serif mb-6'>Review & Payment</h2>
 
                 <div className='bg-stone-50 rounded-2xl p-5 mb-6 border border-stone-100'>
-                  <p className='text-stone-500 text-xs uppercase tracking-wide font-medium mb-3'>
-                    Delivering to
-                  </p>
+                  <p className='text-stone-500 text-xs uppercase tracking-wide font-medium mb-3'>Delivering to</p>
                   <p className='font-bold text-stone-800'>{form.name}</p>
-                  <p className='text-stone-500 text-sm'>
-                    {form.address}, {form.city}, {form.zip}
-                  </p>
+                  <p className='text-stone-500 text-sm'>{form.address}, {form.city}, {form.zip}</p>
                   <p className='text-stone-500 text-sm'>{form.country}</p>
                   <p className='text-stone-500 text-sm'>{form.email}</p>
                 </div>
 
                 <div className='mb-6'>
                   <p className='text-stone-700 font-semibold text-sm mb-3 flex items-center gap-2'>
-                    <CreditCard className='w-4 h-4 text-amber-500' /> Payment
-                    Method
+                    <CreditCard className='w-4 h-4 text-amber-500' /> Payment Method
                   </p>
                   <div className='space-y-3'>
                     {[
-                      {
-                        value: 'cod',
-                        label: 'Cash on Delivery',
-                        sub: 'Pay when your order arrives'
-                      },
-                      {
-                        value: 'bank',
-                        label: 'Bank Transfer',
-                        sub: 'Details will be sent via email'
-                      }
+                      { value: 'cod', label: 'Cash on Delivery', sub: 'Pay when your order arrives' },
+                      { value: 'bank', label: 'Bank Transfer', sub: 'Details will be sent via email' }
                     ].map(pm => (
                       <label
                         key={pm.value}
                         className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                          form.payment === pm.value
-                            ? 'border-amber-400 bg-amber-50'
-                            : 'border-stone-200 hover:border-amber-300'
+                          form.payment === pm.value ? 'border-amber-400 bg-amber-50' : 'border-stone-200 hover:border-amber-300'
                         }`}
                       >
                         <input
                           type='radio'
                           value={pm.value}
                           checked={form.payment === pm.value}
-                          onChange={e =>
-                            setForm(f => ({ ...f, payment: e.target.value }))
-                          }
+                          onChange={e => setForm(f => ({ ...f, payment: e.target.value }))}
                           className='mt-0.5'
                         />
                         <div>
-                          <p className='font-semibold text-stone-800 text-sm'>
-                            {pm.label}
-                          </p>
+                          <p className='font-semibold text-stone-800 text-sm'>{pm.label}</p>
                           <p className='text-stone-400 text-xs'>{pm.sub}</p>
                         </div>
                       </label>
@@ -402,40 +323,28 @@ export default function Checkout ({ onNavigate }: Props) {
                   className='w-full flex items-center justify-center gap-2 py-4 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold rounded-xl transition-all text-sm disabled:opacity-50'
                 >
                   <CheckCircle className='w-5 h-5' />
-                  {placing
-                    ? 'Placing Order...'
-                    : `Place Order · $${grandTotal.toFixed(2)}`}
+                  {placing ? 'Placing Order...' : `Place Order · ₹${grandTotal.toFixed(2)}`}
                 </button>
               </div>
             )}
           </div>
 
-          {/* Right Column: Order Summary Interface Panel */}
+          {/* Right Column: Order Summary */}
           <div className='lg:col-span-2'>
             <div className='bg-white rounded-3xl border border-stone-100 p-6 shadow-sm sticky top-24'>
-              <h3 className='font-bold text-stone-900 text-lg font-serif mb-5'>
-                Order Summary
-              </h3>
+              <h3 className='font-bold text-stone-900 text-lg font-serif mb-5'>Order Summary</h3>
               <div className='space-y-3 mb-5 max-h-64 overflow-y-auto pr-1'>
                 {displayItems.map((item, i) => (
                   <div key={i} className='flex gap-3 items-center py-1'>
                     <div className='w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-stone-50 border border-stone-100'>
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className='w-full h-full object-cover'
-                      />
+                      <img src={item.image} alt={item.name} className='w-full h-full object-cover' />
                     </div>
                     <div className='flex-1 min-w-0'>
-                      <p className='text-stone-800 font-semibold text-sm font-serif truncate'>
-                        {item.name}
-                      </p>
-                      <p className='text-stone-400 text-xs mt-0.5'>
-                        Qty: {item.quantity}
-                      </p>
+                      <p className='text-stone-800 font-semibold text-sm font-serif truncate'>{item.name}</p>
+                      <p className='text-stone-400 text-xs mt-0.5'>Qty: {item.quantity}</p>
                     </div>
                     <p className='text-stone-800 font-bold text-sm shrink-0'>
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₹{(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -443,27 +352,17 @@ export default function Checkout ({ onNavigate }: Props) {
               <div className='border-t border-stone-100 pt-4 space-y-2.5'>
                 <div className='flex justify-between text-sm'>
                   <span className='text-stone-500'>Subtotal</span>
-                  <span className='text-stone-800 font-semibold'>
-                    ${total.toFixed(2)}
-                  </span>
+                  <span className='text-stone-800 font-semibold'>₹{total.toFixed(2)}</span>
                 </div>
                 <div className='flex justify-between text-sm'>
                   <span className='text-stone-500'>Shipping</span>
-                  <span
-                    className={
-                      shipping === 0
-                        ? 'text-emerald-600 font-bold'
-                        : 'text-stone-800 font-semibold'
-                    }
-                  >
-                    {shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}
+                  <span className={shipping === 0 ? 'text-emerald-600 font-bold' : 'text-stone-800 font-semibold'}>
+                    {shipping === 0 ? 'Free' : `₹${shipping.toFixed(2)}`}
                   </span>
                 </div>
                 <div className='flex justify-between font-bold pt-3 border-t border-stone-100 mt-2'>
                   <span className='text-stone-900'>Total</span>
-                  <span className='text-stone-900 text-lg'>
-                    ${grandTotal.toFixed(2)}
-                  </span>
+                  <span className='text-stone-900 text-lg'>₹{grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

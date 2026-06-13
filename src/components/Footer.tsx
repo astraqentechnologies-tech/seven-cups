@@ -1,18 +1,16 @@
 import { Leaf, Instagram, Facebook, Twitter, Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-type Props = {
-  onNavigate: (page: string) => void;
-};
-
-export default function Footer({ onNavigate }: Props) {
+export default function Footer() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    await supabase.from('newsletter_subscribers').insert({ email }).select();
+    // await supabase.from('newsletter_subscribers').insert({ email }).select();
     setSubscribed(true);
     setEmail('');
   };
@@ -57,7 +55,7 @@ export default function Footer({ onNavigate }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-14">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <button onClick={() => onNavigate('home')} className="flex items-center gap-2 mb-5">
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-5">
               <div className="w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center">
                 <Leaf className="w-5 h-5 text-stone-900" />
               </div>
@@ -83,14 +81,14 @@ export default function Footer({ onNavigate }: Props) {
             <h4 className="text-white font-semibold mb-5 text-sm tracking-wide uppercase">Explore</h4>
             <ul className="flex flex-col gap-3">
               {[
-                { label: 'All Products', page: 'products' },
-                { label: 'New Arrivals', page: 'products' },
-                { label: 'Best Sellers', page: 'products' },
-                { label: 'About Us', page: 'about' },
-                { label: 'Contact', page: 'contact' },
+                { label: 'All Products', path: '/products' },
+                { label: 'New Arrivals', path: '/products' },
+                { label: 'Best Sellers', path: '/products' },
+                { label: 'About Us', path: '/about' },
+                { label: 'Contact', path: '/contact' },
               ].map(link => (
-                <li key={link.page + link.label}>
-                  <button onClick={() => onNavigate(link.page)} className="text-stone-500 hover:text-amber-400 text-sm transition-colors">
+                <li key={link.label}>
+                  <button onClick={() => navigate(link.path)} className="text-stone-500 hover:text-amber-400 text-sm transition-colors">
                     {link.label}
                   </button>
                 </li>
@@ -104,7 +102,7 @@ export default function Footer({ onNavigate }: Props) {
             <ul className="flex flex-col gap-3">
               {['Green Tea', 'Black Tea', 'Herbal Tea', 'Organic Tea', 'Wellness Tea', 'Premium'].map(cat => (
                 <li key={cat}>
-                  <button onClick={() => onNavigate('products')} className="text-stone-500 hover:text-amber-400 text-sm transition-colors">
+                  <button onClick={() => navigate('/products')} className="text-stone-500 hover:text-amber-400 text-sm transition-colors">
                     {cat}
                   </button>
                 </li>

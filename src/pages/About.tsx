@@ -1,8 +1,5 @@
 import { Leaf, Heart, Globe, Award, ArrowRight } from 'lucide-react';
-
-type Props = {
-  onNavigate: (page: string) => void;
-};
+import { useNavigate } from 'react-router-dom';
 
 const timeline = [
   { year: '2018', title: 'The First Journey', desc: 'Our founder, Elena Chen, traveled to Darjeeling on a sabbatical and discovered the transformative power of first-flush teas.' },
@@ -13,7 +10,9 @@ const timeline = [
   { year: '2026', title: 'A Community of 25,000', desc: 'Today, the Luminary Tea Circle spans 50+ countries. Every cup connects us to something larger than ourselves.' },
 ];
 
-export default function About({ onNavigate }: Props) {
+export default function About() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-stone-50 pt-20">
       {/* Hero */}
@@ -174,7 +173,7 @@ export default function About({ onNavigate }: Props) {
           <h2 className="text-4xl font-bold text-stone-900 font-serif mb-4">Ready to Begin Your Journey?</h2>
           <p className="text-stone-500 leading-relaxed mb-8">Join 25,000 tea lovers who have discovered their perfect cup.</p>
           <button
-            onClick={() => onNavigate('products')}
+            onClick={() => navigate('/products')}
             className="inline-flex items-center gap-2 px-10 py-4 bg-stone-900 hover:bg-amber-600 text-white font-bold rounded-full transition-all hover:scale-105"
           >
             Explore Our Teas <ArrowRight className="w-5 h-5" />

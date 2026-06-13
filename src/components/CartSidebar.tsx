@@ -1,14 +1,15 @@
 import { X, ShoppingCart, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onNavigate: (page: string) => void;
 };
 
-export default function CartSidebar({ open, onClose, onNavigate }: Props) {
+export default function CartSidebar({ open, onClose }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { items, localItems, itemCount, total, updateQuantity, removeFromCart, updateLocalQuantity, removeFromLocalCart } = useCart();
 
@@ -31,6 +32,11 @@ export default function CartSidebar({ open, onClose, onNavigate }: Props) {
         onQty: (q: number) => updateLocalQuantity(item.product.id, q),
         onRemove: () => removeFromLocalCart(item.product.id),
       }));
+
+  const goTo = (path: string) => {
+    navigate(path);
+    onClose();
+  };
 
   return (
     <>
@@ -60,7 +66,7 @@ export default function CartSidebar({ open, onClose, onNavigate }: Props) {
               <p className="text-stone-500 text-lg font-medium mb-2">Your cart is empty</p>
               <p className="text-stone-400 text-sm mb-6">Add some teas to get started</p>
               <button
-                onClick={() => { onNavigate('products'); onClose(); }}
+                onClick={() => goTo('/products')}
                 className="px-6 py-3 bg-stone-900 text-white rounded-full text-sm font-semibold hover:bg-amber-600 transition-colors"
               >
                 Browse Teas
@@ -75,7 +81,7 @@ export default function CartSidebar({ open, onClose, onNavigate }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-stone-800 font-semibold text-sm leading-snug mb-1 font-serif line-clamp-1">{item.name}</p>
-                    <p className="text-amber-600 font-bold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-amber-600 font-bold text-sm">₹{(item.price * item.quantity).toFixed(2)}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <button onClick={() => item.onQty(item.quantity - 1)} className="w-6 h-6 bg-white border border-stone-200 rounded-full flex items-center justify-center hover:border-amber-400 transition-colors">
                         <Minus className="w-3 h-3 text-stone-500" />
@@ -100,17 +106,17 @@ export default function CartSidebar({ open, onClose, onNavigate }: Props) {
           <div className="px-6 py-5 border-t border-stone-100 bg-white">
             <div className="flex items-center justify-between mb-1">
               <span className="text-stone-500 text-sm">Subtotal</span>
-              <span className="text-stone-800 font-bold text-lg">${total.toFixed(2)}</span>
+              <span className="text-stone-800 font-bold text-lg">₹{total.toFixed(2)}</span>
             </div>
             <p className="text-stone-400 text-xs mb-4">Shipping calculated at checkout</p>
             <button
-              onClick={() => { onNavigate('checkout'); onClose(); }}
+              onClick={() => goTo('/checkout')}
               className="w-full flex items-center justify-center gap-2 py-4 bg-stone-900 hover:bg-amber-600 text-white font-bold rounded-xl transition-all text-sm"
             >
               Checkout <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => { onNavigate('cart'); onClose(); }}
+              onClick={() => goTo('/cart')}
               className="w-full text-center mt-3 text-stone-500 text-sm hover:text-amber-600 transition-colors"
             >
               View Full Cart

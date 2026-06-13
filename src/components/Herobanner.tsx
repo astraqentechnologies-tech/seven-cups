@@ -6,6 +6,7 @@ import {
   useTransform,
 } from "motion/react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ─── Types & data ─────────────────────────────────────────────────────────── */
@@ -15,7 +16,7 @@ export interface HeroBannerSlide {
   cta: string;
   image: string;
   tag?: string;
-  accent: string; // tailwind gradient class kept for compat; we use accentRgb
+  accent: string;
   accentRgb?: string;
 }
 
@@ -49,7 +50,6 @@ export const defaultHeroSlides: HeroBannerSlide[] = [
 interface HeroBannerProps {
   slides?: HeroBannerSlide[];
   autoPlayMs?: number;
-  onCtaClick?: (slide: HeroBannerSlide, index: number) => void;
 }
 
 /* ─── Floating ambient orb ─────────────────────────────────────────────────── */
@@ -131,7 +131,6 @@ function CornerAccents({ accentRgb }: { accentRgb: string }) {
   const color = `rgba(${accentRgb},0.55)`;
   return (
     <>
-      {/* top-left */}
       <motion.svg
         className="absolute top-6 left-6 z-30 pointer-events-none"
         width="48" height="48" viewBox="0 0 48 48" fill="none"
@@ -143,7 +142,6 @@ function CornerAccents({ accentRgb }: { accentRgb: string }) {
           initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
           transition={{ duration: 0.9, ease: "easeOut" }} />
       </motion.svg>
-      {/* bottom-right */}
       <motion.svg
         className="absolute bottom-6 right-6 z-30 pointer-events-none"
         width="48" height="48" viewBox="0 0 48 48" fill="none"
@@ -192,20 +190,6 @@ function SlideImage({
   );
 }
 
-/* ─── Progress bar for active slide ───────────────────────────────────────── */
-
-function ProgressBar({ key: _k, duration }: { key: number; duration: number }) {
-  return (
-    <motion.div
-      className="h-full rounded-full bg-amber-400"
-      initial={{ scaleX: 0 }}
-      animate={{ scaleX: 1 }}
-      transition={{ duration: duration / 1000, ease: "linear" }}
-      style={{ originX: 0 }}
-    />
-  );
-}
-
 /* ─── Word-by-word subtitle reveal ────────────────────────────────────────── */
 
 function SubtitleReveal({ text }: { text: string }) {
@@ -233,8 +217,8 @@ function SubtitleReveal({ text }: { text: string }) {
 function HeroBanner({
   slides = defaultHeroSlides,
   autoPlayMs = 5500,
-  onCtaClick,
 }: HeroBannerProps) {
+  const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -260,7 +244,10 @@ function HeroBanner({
     );
   }, [slides.length, autoPlayMs]);
 
-  useEffect(() => { startAuto(); return () => { if (intervalRef.current) clearInterval(intervalRef.current); }; }, [startAuto]);
+  useEffect(() => {
+    startAuto();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [startAuto]);
 
   const goTo = (n: number) => { setActiveIdx((n + slides.length) % slides.length); startAuto(); };
 
@@ -270,7 +257,7 @@ function HeroBanner({
   return (
     <section
       ref={sectionRef}
-      className="relative w-full h-[520px] md:h-[620px] overflow-hidden bg-stone-950"
+      className="relative w-full h-[320px] md:h-[400px] overflow-hidden bg-stone-950"
       onMouseMove={onMouseMove}
     >
       {/* ── Background images ────────────────────────────────────── */}
@@ -351,7 +338,7 @@ function HeroBanner({
               transition={{ delay: 0.65, duration: 0.5, type: "spring", stiffness: 260, damping: 20 }}
               whileHover={{ scale: 1.06, boxShadow: `0 12px 36px rgba(${accentRgb},0.55)` }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onCtaClick?.(slide, activeIdx)}
+              onClick={() => navigate("/products")}
             >
               {slide.cta}
               <motion.span
@@ -435,11 +422,10 @@ function HeroBanner({
               <motion.div
                 key={activeIdx}
                 className="h-full rounded-full"
-                style={{ background: `rgb(${accentRgb})` }}
+                style={{ background: `rgb(${accentRgb})`, originX: 0 }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: autoPlayMs / 1000, ease: "linear" }}
-                style2={{ originX: 0 }}
               />
             )}
           </motion.button>
@@ -461,4 +447,5 @@ function HeroBanner({
     </section>
   );
 }
- export default HeroBanner
+
+export default HeroBanner;

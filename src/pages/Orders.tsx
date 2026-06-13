@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Package, ChevronRight, ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-type Props = {
-  onNavigate: (page: string) => void
-}
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -15,7 +14,8 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-600'
 }
 
-export default function Orders ({ onNavigate }: Props) {
+export default function Orders () {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,15 +23,19 @@ export default function Orders ({ onNavigate }: Props) {
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setOrders((data as Order[]) || [])
-        setLoading(false)
+    fetch(`${API_BASE_URL}/user/orders`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        Accept: 'application/json'
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Server responded with status ${res.status}`)
+        return res.json()
       })
+      .then(data => setOrders(Array.isArray(data) ? data : data?.data ?? []))
+      .catch(err => console.error('Error fetching orders:', err))
+      .finally(() => setLoading(false))
   }, [user])
 
   if (!user) {
@@ -42,7 +46,7 @@ export default function Orders ({ onNavigate }: Props) {
             Please sign in to view your orders.
           </p>
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => navigate('/auth')}
             className='px-6 py-3 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
           >
             Sign In
@@ -114,11 +118,11 @@ export default function Orders ({ onNavigate }: Props) {
                         {item.product_name}
                       </p>
                       <p className='text-stone-400 text-xs'>
-                        Qty: {item.quantity} × ${item.unit_price.toFixed(2)}
+                        Qty: {item.quantity} × ₹{item.unit_price.toFixed(2)}
                       </p>
                     </div>
                     <p className='font-bold text-stone-800 text-sm'>
-                      ${item.total_price.toFixed(2)}
+                      ₹{item.total_price.toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -152,7 +156,7 @@ export default function Orders ({ onNavigate }: Props) {
                   <div className='flex justify-between'>
                     <span className='text-stone-500'>Subtotal</span>
                     <span className='text-stone-800'>
-                      ${selected.subtotal.toFixed(2)}
+                      ₹{selected.subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className='flex justify-between'>
@@ -160,12 +164,12 @@ export default function Orders ({ onNavigate }: Props) {
                     <span className='text-stone-800'>
                       {selected.shipping_cost === 0
                         ? 'Free'
-                        : `$${selected.shipping_cost.toFixed(2)}`}
+                        : `₹${selected.shipping_cost.toFixed(2)}`}
                     </span>
                   </div>
                   <div className='flex justify-between font-bold pt-1 border-t border-stone-100 mt-1'>
                     <span>Total</span>
-                    <span>${selected.total.toFixed(2)}</span>
+                    <span>₹{selected.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -205,7 +209,7 @@ export default function Orders ({ onNavigate }: Props) {
               Start exploring our teas and place your first order.
             </p>
             <button
-              onClick={() => onNavigate('products')}
+              onClick={() => navigate('/products')}
               className='px-8 py-4 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
             >
               Browse Teas
@@ -246,7 +250,7 @@ export default function Orders ({ onNavigate }: Props) {
                 </div>
                 <div className='text-right shrink-0'>
                   <p className='font-bold text-stone-900'>
-                    ${order.total.toFixed(2)}
+                    ₹{order.total.toFixed(2)}
                   </p>
                   <p className='text-stone-400 text-xs'>
                     {order.order_items?.length || 0} item(s)

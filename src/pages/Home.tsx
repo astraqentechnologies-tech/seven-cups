@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import HeroBanner, { defaultHeroSlides, type HeroBannerSlide } from '../components/HeroBanner'
 import StatsBar from '../components/StatsBar'
 import CategoryGrid from '../components/CategoryGrid'
 import FeaturedTeas from '../components/FeaturedTeas'
-
-type Props = {
-  onNavigate: (page: string, params?: Record<string, string>) => void
-}
+import WhyChooseUs from '../components/Whychooseus'
+import OurStory from '../components/Ourstory'
 
 interface Category {
   id: number
@@ -15,7 +14,6 @@ interface Category {
   image_url: string | null
 }
 
-// Raw shape returned by the API — keep in sync with FeaturedTeas ApiProduct
 export interface ApiProduct {
   id: number
   category_id: number
@@ -40,9 +38,10 @@ export interface ApiProduct {
   updated_at: string
 }
 
-const API_BASE_URL = 'https://www.astraqentechnologies.com/sevencups/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
-export default function Home({ onNavigate }: Props) {
+export default function Home() {
+  const navigate = useNavigate()
   const [heroSlides, setHeroSlides] = useState<HeroBannerSlide[]>(defaultHeroSlides)
   const [categories, setCategories] = useState<Category[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<ApiProduct[]>([])
@@ -71,26 +70,16 @@ export default function Home({ onNavigate }: Props) {
 
   return (
     <div className='min-h-screen bg-stone-50'>
-      {/* Hero Section */}
-      <HeroBanner
-        // slides={heroSlides}
-        // autoPlayMs={5500}
-        // onCtaClick={() => onNavigate('products')}
-      />
-
-      {/* Stats row */}
+      <HeroBanner />
       <StatsBar speedPx={60} />
-
-      {/* Grid Collections */}
-      <CategoryGrid categories={categories} onNavigate={onNavigate} />
-
-      {/* Featured Teas — data fetched here, passed down to avoid double fetch */}
+      <CategoryGrid categories={categories} />
       <FeaturedTeas
         products={featuredProducts}
         loading={featuredLoading}
-        onViewAll={() => onNavigate('products')}
-        onNavigate={onNavigate}
+        onViewAll={() => navigate('/products')}
       />
+      <WhyChooseUs />
+      <OurStory />
     </div>
   )
 }

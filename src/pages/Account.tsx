@@ -9,13 +9,10 @@ import {
   MapPin,
   ShoppingBag
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-type Props = {
-  onNavigate: (page: string) => void
-}
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
 interface Product {
   id: number
@@ -43,7 +40,8 @@ interface Order {
   items: OrderItem[]
 }
 
-export default function Account ({ onNavigate }: Props) {
+export default function Account () {
+  const navigate = useNavigate()
   const { user, token, profile, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile')
   const [editing, setEditing] = useState(false)
@@ -54,7 +52,6 @@ export default function Account ({ onNavigate }: Props) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
 
-  // Aligned form state explicitly with Laravel expectations
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -64,7 +61,6 @@ export default function Account ({ onNavigate }: Props) {
     country: ''
   })
 
-  // 1. Fetch backend payload containing both user and order records
   useEffect(() => {
     if (token) {
       setLoadingOrders(true)
@@ -83,7 +79,6 @@ export default function Account ({ onNavigate }: Props) {
     }
   }, [token])
 
-  // 2. Compute display fields mapping safely to profile or order database layouts
   const latestOrder = orders[0]
 
   const displayInfo = {
@@ -100,7 +95,6 @@ export default function Account ({ onNavigate }: Props) {
 
   const displayEmail = profile?.email || user?.email || ''
 
-  // Pre-populate input form fields when turning on edit mode safely
   useEffect(() => {
     if (!editing) {
       setForm({
@@ -122,7 +116,7 @@ export default function Account ({ onNavigate }: Props) {
             Please sign in to view your account.
           </p>
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => navigate('/auth')}
             className='px-6 py-3 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
           >
             Sign In
@@ -234,32 +228,11 @@ export default function Account ({ onNavigate }: Props) {
               <div className='space-y-5'>
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
                   {[
-                    {
-                      label: 'Full Name',
-                      key: 'name',
-                      placeholder: 'Your full name'
-                    },
-                    {
-                      label: 'Phone',
-                      key: 'phone',
-                      placeholder: '+1 555 000 0000'
-                    },
-                    {
-                      label: 'Street Address',
-                      key: 'street_address', // Corrected key mapping
-                      placeholder: '123 Garden St',
-                      span: 2
-                    },
-                    {
-                      label: 'City',
-                      key: 'city',
-                      placeholder: 'San Francisco'
-                    },
-                    {
-                      label: 'Country',
-                      key: 'country',
-                      placeholder: 'United States'
-                    }
+                    { label: 'Full Name', key: 'name', placeholder: 'Your full name' },
+                    { label: 'Phone', key: 'phone', placeholder: '+1 555 000 0000' },
+                    { label: 'Street Address', key: 'street_address', placeholder: '123 Garden St', span: 2 },
+                    { label: 'City', key: 'city', placeholder: 'San Francisco' },
+                    { label: 'Country', key: 'country', placeholder: 'United States' }
                   ].map(field => (
                     <div
                       key={field.key}
@@ -269,9 +242,7 @@ export default function Account ({ onNavigate }: Props) {
                         {field.label}
                       </label>
                       <input
-                        value={
-                          (form as Record<string, string>)[field.key] || ''
-                        }
+                        value={(form as Record<string, string>)[field.key] || ''}
                         onChange={e =>
                           setForm(f => ({ ...f, [field.key]: e.target.value }))
                         }
@@ -354,7 +325,7 @@ export default function Account ({ onNavigate }: Props) {
                   Explore our fine selection of artisanal single-origin teas.
                 </p>
                 <button
-                  onClick={() => onNavigate('shop')}
+                  onClick={() => navigate('/products')}
                   className='px-6 py-3 bg-stone-900 text-white font-medium rounded-full hover:bg-amber-600 transition-all text-sm'
                 >
                   Browse Teas
@@ -381,7 +352,7 @@ export default function Account ({ onNavigate }: Props) {
                       <div>
                         <p className='text-stone-400 mb-0.5'>Total Amount</p>
                         <span className='text-stone-900 font-bold text-sm'>
-                          ${parseFloat(order.total_amount).toFixed(2)}
+                          ₹{parseFloat(order.total_amount).toFixed(2)}
                         </span>
                       </div>
                       <div>
@@ -428,7 +399,7 @@ export default function Account ({ onNavigate }: Props) {
                         </div>
                         <div className='text-right shrink-0'>
                           <p className='text-stone-900 font-bold'>
-                            ${parseFloat(item.price).toFixed(2)}
+                            ₹{parseFloat(item.price).toFixed(2)}
                           </p>
                         </div>
                       </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, MessageCircle, Send, Clock } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL
+
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -9,9 +11,18 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await supabase.from('inquiries').insert(form);
-    setSubmitted(true);
-    setSubmitting(false);
+    try {
+      await fetch(`${API_BASE_URL}/inquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(form)
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Failed to submit inquiry:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -53,7 +64,6 @@ export default function Contact() {
               </div>
             ))}
 
-            {/* WhatsApp */}
             <a
               href="https://wa.me/15552345678"
               target="_blank"
@@ -64,7 +74,6 @@ export default function Contact() {
               Chat on WhatsApp
             </a>
 
-            {/* Social */}
             <div>
               <p className="text-stone-500 text-xs uppercase tracking-wide font-medium mb-3">Follow Our Journey</p>
               <div className="flex gap-3">

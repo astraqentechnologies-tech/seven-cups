@@ -31,7 +31,6 @@ export interface Category {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
-
 export function useProducts (filters?: {
   categorySlug?: string
   featured?: boolean
