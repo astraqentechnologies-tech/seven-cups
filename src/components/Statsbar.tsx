@@ -11,6 +11,10 @@ interface StatItem {
   icon: string;
 }
 
+interface StatsBarProps {
+  speedPx?: number;
+}
+
 /* ─── Data ──────────────────────────────────────────────────────────────── */
 
 const STATS: StatItem[] = [
@@ -182,7 +186,7 @@ function useSpotlightIndex(count: number, paused: boolean, intervalMs = 2200) {
 
 /* ─── Marquee track (pure rAF, pause-on-hover) ───────────────────────────── */
 
-function MarqueeTrack({ children, paused }: { children: React.ReactNode; paused: boolean }) {
+function MarqueeTrack({ children, paused, speedPx = 60 }: { children: React.ReactNode; paused: boolean; speedPx?: number }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const xRef = useRef(0);
   const pausedRef = useRef(paused);
@@ -193,7 +197,8 @@ function MarqueeTrack({ children, paused }: { children: React.ReactNode; paused:
     const el = trackRef.current;
     if (!el) return;
     const half = el.scrollWidth / 2;
-    xRef.current = (xRef.current - delta * 0.042) % -half;
+    const pxPerMs = speedPx / 1000;
+    xRef.current = (xRef.current - delta * pxPerMs) % -half;
     el.style.transform = `translateX(${xRef.current}px)`;
   });
 
@@ -206,7 +211,7 @@ function MarqueeTrack({ children, paused }: { children: React.ReactNode; paused:
 
 /* ─── Main component ─────────────────────────────────────────────────────── */
 
- function StatsBar() {
+function StatsBar({ speedPx = 60 }: StatsBarProps) {
   const [paused, setPaused] = useState(false);
   const spotIdx = useSpotlightIndex(STATS.length, paused);
 
@@ -260,7 +265,7 @@ function MarqueeTrack({ children, paused }: { children: React.ReactNode; paused:
 
       {/* scrolling content */}
       <div className="py-8 overflow-hidden">
-        <MarqueeTrack paused={paused}>
+        <MarqueeTrack paused={paused} speedPx={speedPx}>
           {buildSet("a")}
           {buildSet("b")}
         </MarqueeTrack>
@@ -272,6 +277,5 @@ function MarqueeTrack({ children, paused }: { children: React.ReactNode; paused:
     </section>
   );
 }
-
 
 export default StatsBar
