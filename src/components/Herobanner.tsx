@@ -25,26 +25,12 @@ export const defaultHeroSlides: HeroBannerSlide[] = [
     subtitle: "Sourced from ancient gardens, crafted with centuries of wisdom.",
     cta: "Explore Collection",
     tag: "Seven Cups",
-    image: "https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg",
+    image: "https://res.cloudinary.com/dlebmdfhr/image/upload/v1781550294/ChatGPT_Image_Jun_16_2026_12_34_23_AM_apzjn7.png",
     accent: "from-stone-900/80 via-stone-900/50 to-transparent",
     accentRgb: "180,83,9",
   },
-  {
-    subtitle: "Spring harvests from the misty highlands of Japan and Darjeeling.",
-    cta: "Shop New Arrivals",
-    tag: "Just In",
-    image: "https://images.pexels.com/photos/3887985/pexels-photo-3887985.jpeg",
-    accent: "from-stone-900/80 via-stone-900/40 to-transparent",
-    accentRgb: "21,128,61",
-  },
-  {
-    subtitle: "Ancient remedies. Modern ritual. Pure, intentional blends.",
-    cta: "Explore Wellness",
-    tag: "Wellness",
-    image: "https://images.pexels.com/photos/1453712/pexels-photo-1453712.jpeg",
-    accent: "from-stone-900/80 via-stone-900/50 to-transparent",
-    accentRgb: "109,40,217",
-  },
+  
+  
 ];
 
 interface HeroBannerProps {

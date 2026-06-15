@@ -248,7 +248,7 @@ function ProductCard({
               animate={revealed ? { x: 0, opacity: 1 } : {}}
               transition={{ delay: 0.35 + index * 0.18, duration: 0.5, type: 'spring' }}
             >
-              ${product.price}
+              ₹{product.price}
             </motion.div>
 
             <div className='absolute bottom-3 left-3 flex gap-1.5'>

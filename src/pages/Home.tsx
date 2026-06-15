@@ -1,18 +1,39 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import HeroBanner, { defaultHeroSlides, type HeroBannerSlide } from '../components/Herobanner'
+import HeroBanner, { defaultHeroSlides } from '../components/Herobanner'
 import StatsBar from '../components/Statsbar'
 import CategoryGrid from '../components/Categorygrid'
 import FeaturedTeas from '../components/FeaturedTeas'
 import WhyChooseUs from '../components/Whychooseus'
 import OurStory from '../components/Ourstory'
+import { PRODUCTS } from '../data/productsData'
 
-interface Category {
-  id: number
-  name: string
-  slug: string
-  image_url: string | null
-}
+// ✅ Static categories — abhi sirf 1 category hai
+const STATIC_CATEGORIES = [
+  {
+    id: 1,
+    name: 'Herbal-Detox',
+    slug: 'Herbal-Detox',
+    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781547663/ChatGPT_Image_Jun_15_2026_11_49_53_PM_a9hq0z.png',
+  },
+  {
+    id: 2,
+    name: 'Energy-Vitality',
+    slug: 'Energy-Vitality',
+    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781553116/ChatGPT_Image_Jun_16_2026_01_20_34_AM_v6ob4s.png',
+  },
+  {
+    id: 3,
+    name: 'Detox-Antioxidanty',
+    slug: 'Detox-Antioxidanty',
+    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781557237/ChatGPT_Image_Jun_16_2026_02_30_15_AM_eyvxq5.png',
+  },
+  {
+    id: 4,
+    name: "Women's Wellness-Hormonal Balance",
+    slug: 'Wellness-Hormonal',
+    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781560063/ChatGPT_Image_Jun_16_2026_03_16_57_AM_bsdnyf.png',
+  },
+]
 
 export interface ApiProduct {
   id: number
@@ -38,44 +59,42 @@ export interface ApiProduct {
   updated_at: string
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
+// ✅ Featured products — PRODUCTS array se filter karo
+const FEATURED_PRODUCTS = PRODUCTS.filter(p => p.is_featured).slice(0, 4).map(p => ({
+  id: p.id,
+  category_id: 1,
+  name: p.name,
+  slug: p.slug,
+  description: p.description,
+  price: String(p.price),
+  compare_price: String(p.compare_price ?? 0),
+  weight_grams: p.weight_grams ?? 0,
+  image_url: p.image_url,
+  flavor_profile: p.flavor_profile ?? '',
+  steep_time: p.steep_time ?? '',
+  temperature: p.temperature ?? '',
+  benefits: '',
+  ingredients: p.ingredients ?? '',
+  brewing_instructions: p.brewing_instructions ?? '',
+  is_active: 1,
+  is_featured: p.is_featured ? 1 : 0,
+  is_new_arrival: p.is_new_arrival ? 1 : 0,
+  is_best_seller: p.is_best_seller ? 1 : 0,
+  created_at: '',
+  updated_at: '',
+}))
 
 export default function Home() {
   const navigate = useNavigate()
-  const [heroSlides, setHeroSlides] = useState<HeroBannerSlide[]>(defaultHeroSlides)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [featuredProducts, setFeaturedProducts] = useState<ApiProduct[]>([])
-  const [featuredLoading, setFeaturedLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchWithCheck = (url: string, setter: (data: any) => void, onDone?: () => void) => {
-      fetch(url)
-        .then(res => {
-          if (!res.ok) throw new Error(`Server responded with status ${res.status}`)
-          return res.json()
-        })
-        .then(data => setter(Array.isArray(data) ? data : data?.data ?? []))
-        .catch(err => console.error(`Error fetching from ${url}:`, err))
-        .finally(() => onDone?.())
-    }
-
-    fetchWithCheck(`${API_BASE_URL}/hero-banner`, setHeroSlides)
-    fetchWithCheck(`${API_BASE_URL}/categories`, setCategories)
-    fetchWithCheck(
-      `${API_BASE_URL}/products?featured=1&limit=4`,
-      setFeaturedProducts,
-      () => setFeaturedLoading(false)
-    )
-  }, [])
 
   return (
     <div className='min-h-screen bg-stone-50'>
-      <HeroBanner />
+      <HeroBanner slides={defaultHeroSlides} />
       <StatsBar speedPx={60} />
-      <CategoryGrid categories={categories} />
+      <CategoryGrid categories={STATIC_CATEGORIES} />
       <FeaturedTeas
-        products={featuredProducts}
-        loading={featuredLoading}
+        products={FEATURED_PRODUCTS}
+        loading={false}
         onViewAll={() => navigate('/products')}
       />
       <WhyChooseUs />
