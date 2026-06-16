@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/logo.png";
+
 
 const NAV_LINKS = [
   { label: "Home",    path: "/"         },
@@ -30,12 +32,6 @@ const NAV_LINKS = [
   { label: "Contact", path: "/contact"  },
 ];
 
-const SHOP_CATEGORIES = [
-  { label: "Green Tea",  icon: Leaf,     color: "#4ade80" },
-  { label: "Black Tea",  icon: Flame,    color: "#f59e0b" },
-  { label: "Herbal",     icon: Sparkles, color: "#a78bfa" },
-  { label: "White Tea",  icon: Wind,     color: "#cbd5e1" },
-];
 
 const PROMOS = [
   "🍃  Free shipping on orders over ₹40",
@@ -76,8 +72,7 @@ function Logo({ scrolled }: { scrolled: boolean }) {
   return (
     <div className="flex items-center gap-2.5 group cursor-pointer flex-shrink-0 pl-4 pr-6">
       <motion.div
-        className="relative w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
+        className="relative w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
         whileHover={{ scale: 1.12, rotate: -6 }}
         transition={{ type: "spring", stiffness: 350, damping: 18 }}
       >
@@ -94,11 +89,11 @@ function Logo({ scrolled }: { scrolled: boolean }) {
             transition={{ duration: 1.8 + i * 0.4, repeat: Infinity, delay: i * 0.5, ease: "easeInOut" }}
           />
         ))}
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M4 8h16v10a4 4 0 01-4 4H8a4 4 0 01-4-4V8z" fill="#1c1108" />
-          <path d="M18 8c0-2 2-2 2-4" stroke="#1c1108" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M4 8h16" stroke="#78350f" strokeWidth="1" />
-        </svg>
+        <img
+  src={logo}
+  alt="sevencups logo"
+  className="w-full h-full object-contain"
+/>
       </motion.div>
 
       <div className="flex flex-col leading-none gap-0.5 overflow-hidden">
@@ -110,14 +105,7 @@ function Logo({ scrolled }: { scrolled: boolean }) {
         >
           sevencups
         </motion.span>
-        <motion.span
-          className="font-semibold uppercase"
-          style={{ fontSize: 9, letterSpacing: "0.3em", color: "#d97706" }}
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        >
-          Tea Co
-        </motion.span>
+        
       </div>
     </div>
   );
@@ -189,25 +177,7 @@ function NavPill({ links }: { links: typeof NAV_LINKS }) {
                     transition={{ duration: 0.22, ease: "easeOut" }}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden z-50 p-2"
                   >
-                    {SHOP_CATEGORIES.map((cat, ci) => (
-                      <motion.button
-                        key={cat.label}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-stone-700 font-medium hover:bg-stone-50 transition-colors text-left"
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: ci * 0.06 }}
-                        whileHover={{ color: cat.color }}
-                        onClick={() => { navigate("/products"); setShopHovered(false); }}
-                      >
-                        <span
-                          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: `${cat.color}22` }}
-                        >
-                          <cat.icon size={14} style={{ color: cat.color }} />
-                        </span>
-                        {cat.label}
-                      </motion.button>
-                    ))}
+                    
                   </motion.div>
                 )}
               </AnimatePresence>

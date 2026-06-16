@@ -90,7 +90,7 @@ export default function Home() {
   return (
     <div className='min-h-screen bg-stone-50'>
       <HeroBanner slides={defaultHeroSlides} />
-      <StatsBar speedPx={60} />
+      {/* <StatsBar speedPx={60} /> */}
       <CategoryGrid categories={STATIC_CATEGORIES} />
       <FeaturedTeas
         products={FEATURED_PRODUCTS}

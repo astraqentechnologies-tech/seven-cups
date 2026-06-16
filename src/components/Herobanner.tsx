@@ -243,7 +243,7 @@ function HeroBanner({
   return (
     <section
       ref={sectionRef}
-      className="relative w-full h-[320px] md:h-[400px] overflow-hidden bg-stone-950"
+      className="relative w-full h-[420px] md:h-[500px] overflow-hidden bg-stone-950"
       onMouseMove={onMouseMove}
     >
       {/* ── Background images ────────────────────────────────────── */}
