@@ -14,37 +14,64 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-600'
 }
 
+// Map raw API order to frontend shape
+function mapOrder (o: any) {
+  return {
+    id: o.id,
+    order_number: `#${String(o.id).padStart(4, '0')}`,
+    status: o.status,
+    created_at: o.created_at,
+    shipping_name: o.full_name,
+    shipping_address: o.street_address,
+    shipping_city: o.city,
+    shipping_zip: o.zip_postal,
+    shipping_country: o.country,
+    subtotal: parseFloat(o.total_amount),
+    shipping_cost: 0,
+    total: parseFloat(o.total_amount),
+    order_items: (o.items || []).map((item: any) => ({
+      id: item.id,
+      product_name: item.product?.name || 'Unknown Product',
+      product_image: item.product?.image_url || '',
+      quantity: item.quantity,
+      unit_price: parseFloat(item.price),
+      total_price: parseFloat(item.price) * item.quantity
+    }))
+  }
+}
+
 export default function Orders () {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const [orders, setOrders] = useState<Order[]>([])
+  const { user, token } = useAuth()
+  const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<Order | null>(null)
+  const [selected, setSelected] = useState<any | null>(null)
 
   useEffect(() => {
-    if (!user) return
-    fetch(`${API_BASE_URL}/user/orders`, {
+    if (!token) return
+    fetch(`${API_BASE_URL}/orders`, {
       headers: {
-        Authorization: `Bearer ${user.token}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/json'
       }
     })
       .then(res => {
-        if (!res.ok) throw new Error(`Server responded with status ${res.status}`)
+        if (!res.ok) throw new Error(`Status ${res.status}`)
         return res.json()
       })
-      .then(data => setOrders(Array.isArray(data) ? data : data?.data ?? []))
+      .then(data => {
+        const raw = Array.isArray(data) ? data : data?.data ?? []
+        setOrders(raw.map(mapOrder))
+      })
       .catch(err => console.error('Error fetching orders:', err))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [token])
 
   if (!user) {
     return (
       <div className='min-h-screen bg-stone-50 pt-20 flex items-center justify-center'>
         <div className='text-center'>
-          <p className='text-stone-500 mb-4'>
-            Please sign in to view your orders.
-          </p>
+          <p className='text-stone-500 mb-4'>Please sign in to view your orders.</p>
           <button
             onClick={() => navigate('/auth')}
             className='px-6 py-3 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
@@ -69,103 +96,59 @@ export default function Orders () {
           <div className='bg-white rounded-3xl border border-stone-100 shadow-sm p-8'>
             <div className='flex items-start justify-between mb-6'>
               <div>
-                <p className='text-stone-400 text-xs uppercase tracking-wide mb-1'>
-                  Order Number
-                </p>
-                <h2 className='text-2xl font-bold text-stone-900 font-mono'>
-                  {selected.order_number}
-                </h2>
+                <p className='text-stone-400 text-xs uppercase tracking-wide mb-1'>Order Number</p>
+                <h2 className='text-2xl font-bold text-stone-900 font-mono'>{selected.order_number}</h2>
                 <p className='text-stone-400 text-sm mt-1'>
                   {new Date(selected.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
+                    year: 'numeric', month: 'long', day: 'numeric'
                   })}
                 </p>
               </div>
-              <span
-                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-                  statusColors[selected.status] || 'bg-stone-100 text-stone-600'
-                }`}
-              >
+              <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${statusColors[selected.status] || 'bg-stone-100 text-stone-600'}`}>
                 {selected.status}
               </span>
             </div>
 
-            {/* Items */}
             <div className='mb-6'>
-              <h3 className='font-semibold text-stone-700 text-sm mb-4'>
-                Items Ordered
-              </h3>
+              <h3 className='font-semibold text-stone-700 text-sm mb-4'>Items Ordered</h3>
               <div className='space-y-3'>
-                {selected.order_items?.map(item => (
-                  <div
-                    key={item.id}
-                    className='flex gap-4 items-center bg-stone-50 rounded-xl p-4'
-                  >
+                {selected.order_items?.map((item: any) => (
+                  <div key={item.id} className='flex gap-4 items-center bg-stone-50 rounded-xl p-4'>
                     <div className='w-14 h-14 rounded-lg overflow-hidden bg-stone-100 shrink-0'>
                       <img
-                        src={
-                          item.product_image ||
-                          'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'
-                        }
+                        src={item.product_image || 'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'}
                         alt={item.product_name}
                         className='w-full h-full object-cover'
                       />
                     </div>
                     <div className='flex-1'>
-                      <p className='font-semibold text-stone-800 text-sm'>
-                        {item.product_name}
-                      </p>
-                      <p className='text-stone-400 text-xs'>
-                        Qty: {item.quantity} × ₹{item.unit_price.toFixed(2)}
-                      </p>
+                      <p className='font-semibold text-stone-800 text-sm'>{item.product_name}</p>
+                      <p className='text-stone-400 text-xs'>Qty: {item.quantity} × ₹{item.unit_price.toFixed(2)}</p>
                     </div>
-                    <p className='font-bold text-stone-800 text-sm'>
-                      ₹{item.total_price.toFixed(2)}
-                    </p>
+                    <p className='font-bold text-stone-800 text-sm'>₹{item.total_price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Shipping */}
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6'>
               <div className='bg-stone-50 rounded-2xl p-5'>
-                <p className='text-stone-400 text-xs uppercase tracking-wide font-medium mb-3'>
-                  Shipping Address
-                </p>
-                <p className='font-semibold text-stone-800 text-sm'>
-                  {selected.shipping_name}
-                </p>
-                <p className='text-stone-500 text-sm'>
-                  {selected.shipping_address}
-                </p>
-                <p className='text-stone-500 text-sm'>
-                  {selected.shipping_city}, {selected.shipping_zip}
-                </p>
-                <p className='text-stone-500 text-sm'>
-                  {selected.shipping_country}
-                </p>
+                <p className='text-stone-400 text-xs uppercase tracking-wide font-medium mb-3'>Shipping Address</p>
+                <p className='font-semibold text-stone-800 text-sm'>{selected.shipping_name}</p>
+                <p className='text-stone-500 text-sm'>{selected.shipping_address}</p>
+                <p className='text-stone-500 text-sm'>{selected.shipping_city}, {selected.shipping_zip}</p>
+                <p className='text-stone-500 text-sm'>{selected.shipping_country}</p>
               </div>
               <div className='bg-stone-50 rounded-2xl p-5'>
-                <p className='text-stone-400 text-xs uppercase tracking-wide font-medium mb-3'>
-                  Order Totals
-                </p>
+                <p className='text-stone-400 text-xs uppercase tracking-wide font-medium mb-3'>Order Totals</p>
                 <div className='space-y-1.5 text-sm'>
                   <div className='flex justify-between'>
                     <span className='text-stone-500'>Subtotal</span>
-                    <span className='text-stone-800'>
-                      ₹{selected.subtotal.toFixed(2)}
-                    </span>
+                    <span className='text-stone-800'>₹{selected.subtotal.toFixed(2)}</span>
                   </div>
                   <div className='flex justify-between'>
                     <span className='text-stone-500'>Shipping</span>
-                    <span className='text-stone-800'>
-                      {selected.shipping_cost === 0
-                        ? 'Free'
-                        : `₹${selected.shipping_cost.toFixed(2)}`}
-                    </span>
+                    <span className='text-stone-800'>{selected.shipping_cost === 0 ? 'Free' : `₹${selected.shipping_cost.toFixed(2)}`}</span>
                   </div>
                   <div className='flex justify-between font-bold pt-1 border-t border-stone-100 mt-1'>
                     <span>Total</span>
@@ -185,29 +168,20 @@ export default function Orders () {
       <div className='max-w-4xl mx-auto px-6 py-12'>
         <div className='flex items-center gap-3 mb-10'>
           <Package className='w-7 h-7 text-amber-600' />
-          <h1 className='text-3xl font-bold text-stone-900 font-serif'>
-            My Orders
-          </h1>
+          <h1 className='text-3xl font-bold text-stone-900 font-serif'>My Orders</h1>
         </div>
 
         {loading ? (
           <div className='space-y-4'>
             {[1, 2, 3].map(i => (
-              <div
-                key={i}
-                className='bg-white rounded-2xl h-24 animate-pulse'
-              />
+              <div key={i} className='bg-white rounded-2xl h-24 animate-pulse' />
             ))}
           </div>
         ) : orders.length === 0 ? (
           <div className='text-center py-20 bg-white rounded-3xl border border-stone-100'>
             <Package className='w-12 h-12 text-stone-200 mx-auto mb-4' />
-            <h2 className='text-xl font-bold text-stone-900 font-serif mb-2'>
-              No orders yet
-            </h2>
-            <p className='text-stone-500 text-sm mb-6'>
-              Start exploring our teas and place your first order.
-            </p>
+            <h2 className='text-xl font-bold text-stone-900 font-serif mb-2'>No orders yet</h2>
+            <p className='text-stone-500 text-sm mb-6'>Start exploring our teas and place your first order.</p>
             <button
               onClick={() => navigate('/products')}
               className='px-8 py-4 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
@@ -228,33 +202,20 @@ export default function Orders () {
                 </div>
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-center gap-3 mb-1'>
-                    <p className='font-bold text-stone-900 font-mono text-sm'>
-                      {order.order_number}
-                    </p>
-                    <span
-                      className={`px-3 py-0.5 rounded-full text-xs font-semibold ${
-                        statusColors[order.status] ||
-                        'bg-stone-100 text-stone-600'
-                      }`}
-                    >
+                    <p className='font-bold text-stone-900 font-mono text-sm'>{order.order_number}</p>
+                    <span className={`px-3 py-0.5 rounded-full text-xs font-semibold ${statusColors[order.status] || 'bg-stone-100 text-stone-600'}`}>
                       {order.status}
                     </span>
                   </div>
                   <p className='text-stone-400 text-xs'>
                     {new Date(order.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
+                      year: 'numeric', month: 'short', day: 'numeric'
                     })}
                   </p>
                 </div>
                 <div className='text-right shrink-0'>
-                  <p className='font-bold text-stone-900'>
-                    ₹{order.total.toFixed(2)}
-                  </p>
-                  <p className='text-stone-400 text-xs'>
-                    {order.order_items?.length || 0} item(s)
-                  </p>
+                  <p className='font-bold text-stone-900'>₹{order.total.toFixed(2)}</p>
+                  <p className='text-stone-400 text-xs'>{order.order_items?.length || 0} item(s)</p>
                 </div>
                 <ChevronRight className='w-5 h-5 text-stone-300 shrink-0' />
               </button>

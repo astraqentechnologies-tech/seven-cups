@@ -7,7 +7,9 @@ import {
   AlertCircle,
   Clock,
   MapPin,
-  ShoppingBag
+  ShoppingBag,
+  CheckCircle2,
+  X
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -40,6 +42,21 @@ interface Order {
   items: OrderItem[]
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  cancelled: 'bg-red-50 text-red-600 border-red-200'
+}
+const DEFAULT_STATUS_STYLE = 'bg-blue-50 text-blue-700 border-blue-200'
+
+const PROFILE_FIELDS = [
+  { label: 'Full Name', key: 'name', placeholder: 'Your full name', span: 1 },
+  { label: 'Phone', key: 'phone', placeholder: '+91 98000 00000', span: 1 },
+  { label: 'Street Address', key: 'street_address', placeholder: '123 Garden St', span: 2 },
+  { label: 'City', key: 'city', placeholder: 'Mumbai', span: 1 },
+  { label: 'Country', key: 'country', placeholder: 'India', span: 1 }
+] as const
+
 export default function Account () {
   const navigate = useNavigate()
   const { user, token, profile, refreshProfile } = useAuth()
@@ -62,21 +79,21 @@ export default function Account () {
   })
 
   useEffect(() => {
-    if (token) {
-      setLoadingOrders(true)
-      fetch(`${API_BASE_URL}/user/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
+    if (!token) return
+    setLoadingOrders(true)
+    fetch(`${API_BASE_URL}/orders`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const raw = Array.isArray(data) ? data : data?.data ?? []
+        setOrders(raw)
       })
-        .then(res => res.json())
-        .then(data => {
-          setOrders(data.orders || [])
-        })
-        .catch(err => console.error('Error loading account payload:', err))
-        .finally(() => setLoadingOrders(false))
-    }
+      .catch(err => console.error('Error loading orders:', err))
+      .finally(() => setLoadingOrders(false))
   }, [token])
 
   const latestOrder = orders[0]
@@ -86,7 +103,7 @@ export default function Account () {
     phone: profile?.phone || latestOrder?.phone || '—',
     address:
       profile?.address ||
-      profile?.street_address ||
+      (profile as any)?.street_address ||
       latestOrder?.street_address ||
       '—',
     city: profile?.city || latestOrder?.city || '—',
@@ -96,35 +113,17 @@ export default function Account () {
   const displayEmail = profile?.email || user?.email || ''
 
   useEffect(() => {
-    if (!editing) {
-      setForm({
-        name: displayInfo.name !== '—' ? displayInfo.name : '',
-        email: displayEmail,
-        phone: displayInfo.phone !== '—' ? displayInfo.phone : '',
-        street_address: displayInfo.address !== '—' ? displayInfo.address : '',
-        city: displayInfo.city !== '—' ? displayInfo.city : '',
-        country: displayInfo.country !== '—' ? displayInfo.country : ''
-      })
-    }
+    if (editing) return
+    setForm({
+      name: displayInfo.name !== '—' ? displayInfo.name : '',
+      email: displayEmail,
+      phone: displayInfo.phone !== '—' ? displayInfo.phone : '',
+      street_address: displayInfo.address !== '—' ? displayInfo.address : '',
+      city: displayInfo.city !== '—' ? displayInfo.city : '',
+      country: displayInfo.country !== '—' ? displayInfo.country : ''
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, orders, profile, user, displayInfo.name, displayEmail])
-
-  if (!user) {
-    return (
-      <div className='min-h-screen bg-stone-50 pt-20 flex items-center justify-center'>
-        <div className='text-center'>
-          <p className='text-stone-500 mb-4'>
-            Please sign in to view your account.
-          </p>
-          <button
-            onClick={() => navigate('/auth')}
-            className='px-6 py-3 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-all'
-          >
-            Sign In
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   const handleSave = async () => {
     if (!token) return
@@ -159,267 +158,387 @@ export default function Account () {
     }
   }
 
+  if (!user) {
+    return (
+      <div className='min-h-screen bg-stone-50 pt-20 flex items-center justify-center px-6'>
+        <div className='text-center max-w-sm'>
+          <div className='w-14 h-14 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-5'>
+            <User className='w-7 h-7 text-stone-400' />
+          </div>
+          <p className='text-stone-500 mb-6 text-sm'>
+            Please sign in to view your account.
+          </p>
+          <button
+            onClick={() => navigate('/auth')}
+            className='px-6 py-3 bg-stone-900 text-white font-bold rounded-full hover:bg-amber-600 transition-colors'
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='min-h-screen bg-stone-50 pt-20'>
       <div className='max-w-4xl mx-auto px-6 py-12'>
-        {/* Header Section */}
-        <div className='flex items-center gap-4 mb-10'>
-          <div className='w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center shadow-sm'>
+
+        {/* ============ HEADER ============ */}
+        <header className='flex items-center gap-4 mb-12'>
+          <div className='w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center shrink-0'>
             <User className='w-8 h-8 text-amber-600' />
           </div>
-          <div>
-            <h1 className='text-3xl font-bold text-stone-900 font-serif tracking-tight'>
+          <div className='min-w-0'>
+            <h1 className='text-3xl font-bold text-stone-900 font-serif tracking-tight truncate'>
               {displayInfo.name}
             </h1>
-            <p className='text-stone-500 text-sm mt-0.5'>{displayEmail}</p>
+            <p className='text-stone-500 text-sm mt-1'>{displayEmail}</p>
           </div>
-        </div>
+        </header>
 
-        {/* Navigation Tabs */}
-        <div className='flex gap-2 mb-8 overflow-x-auto pb-1 scrollbar-none'>
+        {/* ============ TAB NAVIGATION ============ */}
+        <nav className='flex gap-2 mb-10 border-b border-stone-200'>
           {[
-            { id: 'profile', icon: User, label: 'Profile' },
-            { id: 'orders', icon: Package, label: 'My Orders' }
+            { id: 'profile' as const, icon: User, label: 'Profile' },
+            { id: 'orders' as const, icon: Package, label: 'My Orders' }
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'profile' | 'orders')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-stone-900 text-white shadow-sm'
-                  : 'bg-white border border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-700'
+                  ? 'border-amber-600 text-stone-900'
+                  : 'border-transparent text-stone-400 hover:text-stone-600'
               }`}
             >
-              <tab.icon className='w-4 h-4' /> {tab.label}
+              <tab.icon className='w-4 h-4' />
+              {tab.label}
             </button>
           ))}
-        </div>
+        </nav>
 
-        {/* TAB 1: PROFILE INTERFACE */}
-        {activeTab === 'profile' && (
-          <div className='bg-white rounded-3xl border border-stone-100 shadow-sm p-8 transition-all duration-300'>
-            <div className='flex items-center justify-between mb-7'>
-              <h2 className='text-xl font-bold text-stone-900 font-serif'>
-                Personal Information
-              </h2>
-              {!editing && (
-                <button
-                  onClick={() => setEditing(true)}
-                  className='flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-600 bg-amber-50 rounded-full hover:bg-amber-100 transition-colors'
-                >
-                  <Edit2 className='w-4 h-4' /> Edit
-                </button>
-              )}
+        {/* ============ TAB PANELS ============ */}
+        {activeTab === 'profile' ? (
+          <ProfileSection
+            editing={editing}
+            setEditing={setEditing}
+            saved={saved}
+            errorMsg={errorMsg}
+            setErrorMsg={setErrorMsg}
+            saving={saving}
+            form={form}
+            setForm={setForm}
+            handleSave={handleSave}
+            displayInfo={displayInfo}
+            displayEmail={displayEmail}
+            memberSince={profile?.created_at || user?.created_at}
+          />
+        ) : (
+          <OrdersSection
+            loadingOrders={loadingOrders}
+            orders={orders}
+            navigate={navigate}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ===================================================================== */
+/* PROFILE SECTION                                                        */
+/* ===================================================================== */
+
+function ProfileSection ({
+  editing,
+  setEditing,
+  saved,
+  errorMsg,
+  setErrorMsg,
+  saving,
+  form,
+  setForm,
+  handleSave,
+  displayInfo,
+  displayEmail,
+  memberSince
+}: {
+  editing: boolean
+  setEditing: (v: boolean) => void
+  saved: boolean
+  errorMsg: string | null
+  setErrorMsg: (v: string | null) => void
+  saving: boolean
+  form: Record<string, string>
+  setForm: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  handleSave: () => void
+  displayInfo: { name: string; phone: string; address: string; city: string; country: string }
+  displayEmail: string
+  memberSince: string | undefined
+}) {
+  const viewFields = [
+    { label: 'Full Name', value: displayInfo.name },
+    { label: 'Email', value: displayEmail || '—' },
+    { label: 'Phone', value: displayInfo.phone },
+    { label: 'City', value: displayInfo.city },
+    { label: 'Address', value: displayInfo.address, span: true },
+    { label: 'Country', value: displayInfo.country },
+    {
+      label: 'Member Since',
+      value: memberSince
+        ? new Date(memberSince).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long'
+          })
+        : '—'
+    }
+  ]
+
+  return (
+    <section className='bg-white rounded-3xl border border-stone-100 shadow-sm'>
+      {/* Section header */}
+      <div className='flex items-center justify-between px-8 py-6 border-b border-stone-100'>
+        <h2 className='text-lg font-bold text-stone-900 font-serif'>
+          Personal Information
+        </h2>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className='flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-full hover:bg-amber-100 transition-colors'
+          >
+            <Edit2 className='w-4 h-4' />
+            Edit
+          </button>
+        )}
+      </div>
+
+      {/* Status banners */}
+      {(saved || errorMsg) && (
+        <div className='px-8 pt-6'>
+          {saved && (
+            <div className='flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm'>
+              <CheckCircle2 className='w-4 h-4 shrink-0' />
+              Profile updated successfully.
             </div>
-
-            {saved && (
-              <div className='bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm mb-5 shadow-sm'>
-                Profile updated successfully!
-              </div>
-            )}
-            {errorMsg && (
-              <div className='bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-4 py-3 text-sm mb-5 shadow-sm flex items-center gap-2'>
+          )}
+          {errorMsg && (
+            <div className='flex items-center justify-between gap-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-4 py-3 text-sm'>
+              <span className='flex items-center gap-2'>
                 <AlertCircle className='w-4 h-4 shrink-0' />
                 {errorMsg}
-              </div>
-            )}
+              </span>
+              <button onClick={() => setErrorMsg(null)} aria-label='Dismiss error'>
+                <X className='w-4 h-4 text-rose-400 hover:text-rose-600' />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-            {editing ? (
-              <div className='space-y-5'>
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
-                  {[
-                    { label: 'Full Name', key: 'name', placeholder: 'Your full name' },
-                    { label: 'Phone', key: 'phone', placeholder: '+1 555 000 0000' },
-                    { label: 'Street Address', key: 'street_address', placeholder: '123 Garden St', span: 2 },
-                    { label: 'City', key: 'city', placeholder: 'San Francisco' },
-                    { label: 'Country', key: 'country', placeholder: 'United States' }
-                  ].map(field => (
-                    <div
-                      key={field.key}
-                      className={field.span === 2 ? 'sm:col-span-2' : ''}
-                    >
-                      <label className='block text-stone-600 text-sm font-medium mb-2'>
-                        {field.label}
-                      </label>
-                      <input
-                        value={(form as Record<string, string>)[field.key] || ''}
-                        onChange={e =>
-                          setForm(f => ({ ...f, [field.key]: e.target.value }))
-                        }
-                        placeholder={field.placeholder}
-                        className='w-full px-4 py-3.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 text-sm outline-none focus:border-amber-400 focus:bg-white transition-all'
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className='flex gap-3 pt-2'>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className='flex items-center gap-2 px-6 py-3 bg-stone-900 hover:bg-amber-600 text-white font-semibold rounded-full text-sm transition-all disabled:opacity-50'
-                  >
-                    <Save className='w-4 h-4' />{' '}
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditing(false)
-                      setErrorMsg(null)
-                    }}
-                    className='px-6 py-3 border border-stone-200 text-stone-600 font-semibold rounded-full text-sm hover:border-stone-300 transition-all'
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
-                {[
-                  { label: 'Full Name', value: displayInfo.name },
-                  { label: 'Email', value: displayEmail || '—' },
-                  { label: 'Phone', value: displayInfo.phone },
-                  { label: 'City', value: displayInfo.city },
-                  { label: 'Address', value: displayInfo.address, span: true },
-                  { label: 'Country', value: displayInfo.country },
-                  {
-                    label: 'Member Since',
-                    value:
-                      profile?.created_at || user?.created_at
-                        ? new Date(
-                            (profile?.created_at || user?.created_at) as string
-                          ).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long'
-                          })
-                        : '—'
-                  }
-                ].map((field, i) => (
-                  <div key={i} className={field.span ? 'sm:col-span-2' : ''}>
-                    <p className='text-stone-400 text-xs uppercase tracking-wide font-medium mb-1'>
-                      {field.label}
-                    </p>
-                    <p className='text-stone-800 font-medium'>{field.value}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: ORDERS INTERFACE */}
-        {activeTab === 'orders' && (
-          <div className='space-y-6 transition-all duration-300'>
-            {loadingOrders ? (
-              <div className='bg-white rounded-3xl border border-stone-100 shadow-sm p-12 text-center text-stone-500 text-sm'>
-                Loading purchase transactions...
-              </div>
-            ) : orders.length === 0 ? (
-              <div className='bg-white rounded-3xl border border-stone-100 shadow-sm p-8 text-center py-16'>
-                <div className='w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                  <ShoppingBag className='w-8 h-8 text-stone-400' />
-                </div>
-                <h2 className='text-xl font-bold text-stone-900 font-serif mb-2'>
-                  No orders found
-                </h2>
-                <p className='text-stone-500 text-sm max-w-xs mx-auto mb-6'>
-                  Explore our fine selection of artisanal single-origin teas.
-                </p>
-                <button
-                  onClick={() => navigate('/products')}
-                  className='px-6 py-3 bg-stone-900 text-white font-medium rounded-full hover:bg-amber-600 transition-all text-sm'
-                >
-                  Browse Teas
-                </button>
-              </div>
-            ) : (
-              orders.map(order => (
+      {/* Body */}
+      <div className='px-8 py-8'>
+        {editing ? (
+          <div className='space-y-8'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5'>
+              {PROFILE_FIELDS.map(field => (
                 <div
-                  key={order.id}
-                  className='bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden'
+                  key={field.key}
+                  className={field.span === 2 ? 'sm:col-span-2' : ''}
                 >
-                  <div className='bg-stone-50 px-8 py-5 border-b border-stone-100 flex flex-wrap gap-4 items-center justify-between'>
-                    <div className='flex gap-6 text-xs text-stone-500 uppercase tracking-wider font-medium'>
-                      <div>
-                        <p className='text-stone-400 mb-0.5'>Order Placed</p>
-                        <span className='text-stone-700 flex items-center gap-1 normal-case font-semibold'>
-                          <Clock className='w-3.5 h-3.5 text-stone-400' />{' '}
-                          {new Date(order.created_at).toLocaleDateString(
-                            'en-US',
-                            { year: 'numeric', month: 'short', day: 'numeric' }
-                          )}
-                        </span>
-                      </div>
-                      <div>
-                        <p className='text-stone-400 mb-0.5'>Total Amount</p>
-                        <span className='text-stone-900 font-bold text-sm'>
-                          ₹{parseFloat(order.total_amount).toFixed(2)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className='text-stone-400 mb-0.5'>Order Reference</p>
-                        <span className='text-stone-700 font-semibold font-mono text-sm'>
-                          #LMN-{order.id}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                          order.status === 'pending'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700'
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='p-8 space-y-6'>
-                    {order.items?.map(item => (
-                      <div
-                        key={item.id}
-                        className='flex gap-5 items-center pb-6 border-b border-stone-100 last:border-none last:pb-0'
-                      >
-                        <img
-                          src={item.product?.image_url}
-                          alt={item.product?.name}
-                          className='w-20 h-20 object-cover bg-stone-100 rounded-2xl border border-stone-100 shrink-0'
-                        />
-                        <div className='flex-1 min-w-0'>
-                          <h4 className='text-stone-900 font-bold font-serif text-base truncate'>
-                            {item.product?.name}
-                          </h4>
-                          <p className='text-stone-500 text-sm mt-0.5'>
-                            Quantity:{' '}
-                            <span className='text-stone-800 font-semibold'>
-                              {item.quantity}
-                            </span>
-                          </p>
-                        </div>
-                        <div className='text-right shrink-0'>
-                          <p className='text-stone-900 font-bold'>
-                            ₹{parseFloat(item.price).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-
-                    <div className='pt-4 flex gap-2 items-start text-stone-500 text-xs mt-2 border-t border-stone-50'>
-                      <MapPin className='w-4 h-4 text-stone-400 shrink-0 mt-0.5' />
-                      <p>
-                        Shipping destination address:{' '}
-                        <span className='text-stone-700 font-medium'>
-                          {order.street_address}, {order.city}, {order.country}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
+                  <label
+                    htmlFor={field.key}
+                    className='block text-stone-600 text-sm font-medium mb-2'
+                  >
+                    {field.label}
+                  </label>
+                  <input
+                    id={field.key}
+                    value={form[field.key] || ''}
+                    onChange={e =>
+                      setForm(f => ({ ...f, [field.key]: e.target.value }))
+                    }
+                    placeholder={field.placeholder}
+                    className='w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 text-sm outline-none focus:border-amber-400 focus:bg-white transition-colors'
+                  />
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+
+            <div className='flex gap-3 pt-2 border-t border-stone-100'>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className='flex items-center gap-2 px-6 py-3 mt-6 bg-stone-900 hover:bg-amber-600 text-white font-semibold rounded-full text-sm transition-colors disabled:opacity-50'
+              >
+                <Save className='w-4 h-4' />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => {
+                  setEditing(false)
+                  setErrorMsg(null)
+                }}
+                className='px-6 py-3 mt-6 border border-stone-200 text-stone-600 font-semibold rounded-full text-sm hover:border-stone-300 transition-colors'
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6'>
+            {viewFields.map((field, i) => (
+              <div key={i} className={field.span ? 'sm:col-span-2' : ''}>
+                <p className='text-stone-400 text-xs uppercase tracking-wide font-semibold mb-1.5'>
+                  {field.label}
+                </p>
+                <p className='text-stone-800 font-medium'>{field.value}</p>
+              </div>
+            ))}
           </div>
         )}
+      </div>
+    </section>
+  )
+}
+
+/* ===================================================================== */
+/* ORDERS SECTION                                                         */
+/* ===================================================================== */
+
+function OrdersSection ({
+  loadingOrders,
+  orders,
+  navigate
+}: {
+  loadingOrders: boolean
+  orders: Order[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  if (loadingOrders) {
+    return (
+      <div className='bg-white rounded-3xl border border-stone-100 shadow-sm p-16 text-center text-stone-500 text-sm'>
+        Loading your orders...
+      </div>
+    )
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className='bg-white rounded-3xl border border-stone-100 shadow-sm px-8 py-16 text-center'>
+        <div className='w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-5'>
+          <ShoppingBag className='w-8 h-8 text-stone-400' />
+        </div>
+        <h2 className='text-xl font-bold text-stone-900 font-serif mb-2'>
+          No orders found
+        </h2>
+        <p className='text-stone-500 text-sm max-w-xs mx-auto mb-7'>
+          Explore our fine selection of artisanal single-origin teas.
+        </p>
+        <button
+          onClick={() => navigate('/products')}
+          className='px-6 py-3 bg-stone-900 text-white font-medium rounded-full hover:bg-amber-600 transition-colors text-sm'
+        >
+          Browse Teas
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className='space-y-6'>
+      {orders.map(order => (
+        <OrderCard key={order.id} order={order} />
+      ))}
+    </div>
+  )
+}
+
+function OrderCard ({ order }: { order: Order }) {
+  const statusStyle = STATUS_STYLES[order.status] ?? DEFAULT_STATUS_STYLE
+  const orderTotal = parseFloat(order.total_amount)
+
+  return (
+    <article className='bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden'>
+      {/* Order meta header */}
+      <div className='bg-stone-50 px-8 py-5 border-b border-stone-100 flex flex-wrap gap-6 items-center justify-between'>
+        <div className='flex flex-wrap gap-x-8 gap-y-3 text-xs text-stone-400 uppercase tracking-wider font-medium'>
+          <div>
+            <p className='mb-1'>Order Placed</p>
+            <span className='flex items-center gap-1.5 normal-case text-stone-700 font-semibold text-sm'>
+              <Clock className='w-3.5 h-3.5 text-stone-400' />
+              {new Date(order.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </span>
+          </div>
+          <div>
+            <p className='mb-1'>Total Amount</p>
+            <span className='text-stone-900 font-bold text-sm normal-case'>
+              ₹{orderTotal.toFixed(2)}
+            </span>
+          </div>
+          <div>
+            <p className='mb-1'>Order Reference</p>
+            <span className='text-stone-700 font-semibold font-mono text-sm normal-case'>
+              #LMN-{String(order.id).padStart(4, '0')}
+            </span>
+          </div>
+        </div>
+
+        <span
+          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${statusStyle}`}
+        >
+          {order.status}
+        </span>
+      </div>
+
+      {/* Order items */}
+      <div className='px-8 py-6 divide-y divide-stone-100'>
+        {order.items?.map(item => (
+          <OrderItemRow key={item.id} item={item} />
+        ))}
+      </div>
+
+      {/* Shipping address */}
+      <div className='px-8 pb-6 flex gap-2 items-start text-stone-500 text-xs'>
+        <MapPin className='w-4 h-4 text-stone-400 shrink-0 mt-0.5' />
+        <p>
+          Shipping to:{' '}
+          <span className='text-stone-700 font-medium'>
+            {order.street_address}, {order.city}, {order.country}
+          </span>
+        </p>
+      </div>
+    </article>
+  )
+}
+
+function OrderItemRow ({ item }: { item: OrderItem }) {
+  const lineTotal = parseFloat(item.price) * item.quantity
+
+  return (
+    <div className='flex gap-5 items-center py-5 first:pt-0 last:pb-0'>
+      <img
+        src={
+          item.product?.image_url ||
+          'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'
+        }
+        alt={item.product?.name}
+        className='w-20 h-20 object-cover bg-stone-100 rounded-2xl border border-stone-100 shrink-0'
+      />
+      <div className='flex-1 min-w-0'>
+        <h4 className='text-stone-900 font-bold font-serif text-base truncate'>
+          {item.product?.name}
+        </h4>
+        <p className='text-stone-500 text-sm mt-1'>
+          Quantity: <span className='text-stone-800 font-semibold'>{item.quantity}</span>
+        </p>
+      </div>
+      <div className='text-right shrink-0'>
+        <p className='text-stone-900 font-bold'>₹{lineTotal.toFixed(2)}</p>
+        <p className='text-stone-400 text-xs mt-0.5'>₹{parseFloat(item.price).toFixed(2)} each</p>
       </div>
     </div>
   )

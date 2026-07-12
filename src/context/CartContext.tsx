@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { PRODUCTS } from '../data/productsData'; // ⚠️ apna actual path yahan confirm karo
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
@@ -53,7 +54,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch items from Laravel API
+  // Fetch items from Laravel API, then enrich each item using the static PRODUCTS file
   const fetchCart = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -66,7 +67,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setItems(data || []);
+        const rawItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
+
+        // Static PRODUCTS file se hi har cart item ka product data jodo
+        const enrichedItems = rawItems.map((item: any) => {
+          const matchedProduct = PRODUCTS.find(
+            (p: any) => String(p.id) === String(item.product_id)
+          );
+
+          return {
+            ...item,
+            products: matchedProduct
+              ? {
+                  id: matchedProduct.id,
+                  name: matchedProduct.name,
+                  slug: matchedProduct.slug,
+                  description: matchedProduct.description,
+                  price: matchedProduct.price,
+                  compare_price: matchedProduct.compare_price,
+                  image_url: matchedProduct.image_url,
+                  weight_grams: matchedProduct.weight_grams,
+                }
+              : item.products, // agar match na mile to backend wala data hi rehne do (agar ho)
+          };
+        });
+
+        setItems(enrichedItems);
       }
     } catch (err) {
       console.error('Failed to pull cart items from Laravel:', err);
