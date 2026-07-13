@@ -28,13 +28,13 @@ function useCardSize() {
       const vw = window.innerWidth;
       if (vw < 640) {
         // Mobile: 3 cards visible, gap 12px, padding 16px each side
-        const available = vw - 32; // 16px padding dono side
-        const gap = 12 * 2; // 2 gaps for 3 cards
+        const available = vw - 32;
+        const gap = 12 * 2;
         setCardWidth(Math.floor((available - gap) / 3));
       } else if (vw < 1024) {
-        setCardWidth(200);
+        setCardWidth(160);
       } else {
-        setCardWidth(300);
+        setCardWidth(200);
       }
     };
     calc();
@@ -73,7 +73,7 @@ function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement>) {
   );
 }
 
-function ArchCategoryCard({
+function CircleCategoryCard({
   category,
   index,
   inView,
@@ -91,10 +91,10 @@ function ArchCategoryCard({
     category.image_url ||
     "https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg";
 
-  // Card height proportional to width
-  const cardHeight = Math.round(cardWidth * 1.2);
-  const borderRadius = Math.round(cardWidth / 2);
-  const fontSize = cardWidth < 120 ? 11 : cardWidth < 200 ? 13 : 17;
+  // Circle: height = width
+  const circleSize = cardWidth;
+  const fontSize = circleSize < 90 ? 11 : circleSize < 140 ? 12 : 14;
+  const ringSize = circleSize + 8; // outer ring thodi badi
 
   return (
     <motion.div
@@ -111,50 +111,77 @@ function ArchCategoryCard({
       onMouseLeave={() => setHovered(false)}
       onClick={() => navigate(`/products?category=${category.slug}`)}
     >
-      {/* Arch image container */}
-      <motion.div
-        style={{
-          width: cardWidth,
-          height: cardHeight,
-          borderRadius: `${borderRadius}px ${borderRadius}px 12px 12px`,
-          overflow: "hidden",
-          background: "#f0e6d3",
-          position: "relative",
-        }}
-        animate={{
-          y: hovered ? -6 : 0,
-          boxShadow: hovered
-            ? "0 20px 44px rgba(120,70,20,0.22)"
-            : "0 4px 14px rgba(120,70,20,0.10)",
-        }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-      >
+      {/* Outer animated ring */}
+      <div style={{ position: "relative", width: ringSize, height: ringSize }}>
+        {/* Ring */}
         <motion.div
-          className="w-full h-full"
-          animate={{ scale: hovered ? 1.06 : 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        >
-          <ImageWithFallback
-            src={imageSrc}
-            alt={category.name}
-            className="w-full h-full object-cover object-top"
-          />
-        </motion.div>
-
-        <div
           style={{
             position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to top, rgba(60,30,10,0.18) 0%, transparent 50%)",
-            pointerEvents: "none",
+            top: 0,
+            left: 0,
+            width: ringSize,
+            height: ringSize,
+            borderRadius: "50%",
+            border: "2px solid #b45309",
+            boxSizing: "border-box",
           }}
+          animate={{
+            opacity: hovered ? 1 : 0,
+            scale: hovered ? 1 : 0.88,
+          }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         />
-      </motion.div>
+
+        {/* Circle image */}
+        <motion.div
+          style={{
+            position: "absolute",
+            top: 4,
+            left: 4,
+            width: circleSize,
+            height: circleSize,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: "#f0e6d3",
+          }}
+          animate={{
+            y: hovered ? -4 : 0,
+            boxShadow: hovered
+              ? "0 16px 40px rgba(120,70,20,0.28)"
+              : "0 4px 16px rgba(120,70,20,0.12)",
+          }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          <motion.div
+            className="w-full h-full"
+            animate={{ scale: hovered ? 1.08 : 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <ImageWithFallback
+              src={imageSrc}
+              alt={category.name}
+              className="w-full h-full object-cover object-center"
+            />
+          </motion.div>
+
+          {/* Overlay gradient */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle at 50% 100%, rgba(60,30,10,0.22) 0%, transparent 60%)",
+              pointerEvents: "none",
+            }}
+          />
+        </motion.div>
+      </div>
 
       {/* Category name */}
       <motion.p
         style={{
-          marginTop: cardWidth < 120 ? 8 : 14,
+          marginTop: circleSize < 90 ? 8 : 12,
           fontSize,
           fontWeight: 600,
           color: "#2c1f0e",
@@ -162,6 +189,7 @@ function ArchCategoryCard({
           fontFamily: "Georgia, 'Times New Roman', serif",
           letterSpacing: "0.01em",
           lineHeight: 1.3,
+          maxWidth: cardWidth + 8,
         }}
         animate={{ color: hovered ? "#b45309" : "#2c1f0e" }}
         transition={{ duration: 0.25 }}
@@ -172,13 +200,13 @@ function ArchCategoryCard({
       {/* Underline */}
       <motion.div
         style={{
-          marginTop: 5,
+          marginTop: 4,
           height: 2,
           borderRadius: 999,
           background: "#b45309",
-          originX: 0,
+          originX: 0.5,
         }}
-        animate={{ width: hovered ? 32 : 0 }}
+        animate={{ width: hovered ? 28 : 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       />
     </motion.div>
@@ -195,7 +223,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) { setInView(true); io.disconnect(); }
+        if (entry.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
       },
       { threshold: 0.1 }
     );
@@ -226,28 +257,46 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     scrollRef.current?.scrollBy({ left: dir === "left" ? -340 : 340, behavior: "smooth" });
   };
 
-  const useScrollLayout = categories.length > 3;
-  // Mobile pe gap bhi chhota
+  const useScrollLayout = categories.length > 4;
   const isMobile = cardWidth < 150;
-  const gap = isMobile ? 12 : cardWidth < 250 ? 16 : 64;
+  const gap = isMobile ? 16 : cardWidth < 180 ? 24 : 40;
 
   return (
     <section
       ref={sectionRef}
       className="relative overflow-hidden"
-      style={{ background: "#f5ede0", padding: isMobile ? "2.5rem 1rem 3rem" : "4rem 2rem 4.5rem" }}
+      style={{
+        background: "#f5ede0",
+        padding: isMobile ? "2.5rem 1rem 3rem" : "4rem 2rem 4.5rem",
+      }}
     >
       {/* Background blobs */}
-      <div className="absolute pointer-events-none" style={{
-        top: -80, left: -80, width: 360, height: 360, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)",
-        filter: "blur(40px)",
-      }} />
-      <div className="absolute pointer-events-none" style={{
-        bottom: -60, right: -60, width: 300, height: 300, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(180,83,9,0.12) 0%, transparent 70%)",
-        filter: "blur(40px)",
-      }} />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: -80,
+          left: -80,
+          width: 360,
+          height: 360,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
+      />
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          bottom: -60,
+          right: -60,
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(180,83,9,0.12) 0%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
+      />
 
       <div className="relative max-w-6xl mx-auto">
         {/* Heading */}
@@ -258,37 +307,61 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
         >
-          <p style={{
-            fontSize: isMobile ? 14 : 20, fontWeight: 600, letterSpacing: "0.08em",
-            fontFamily: "Georgia, 'Times New Roman', serif",
-            color: "#7a5c3a", marginBottom: 8,
-          }}>
+          <p
+            style={{
+              fontSize: isMobile ? 14 : 20,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              color: "#7a5c3a",
+              marginBottom: 8,
+            }}
+          >
             Something for Everyone
           </p>
-          <h2 style={{
-            fontSize: isMobile ? 28 : 44, fontWeight: 700, color: "#356603",
-            lineHeight: 1.1, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0,
-          }}>
+          <h2
+            style={{
+              fontSize: isMobile ? 28 : 44,
+              fontWeight: 700,
+              color: "#356603",
+              lineHeight: 1.1,
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              margin: 0,
+            }}
+          >
             Shop by Category
           </h2>
         </motion.div>
 
         {/* Scroll buttons — desktop only */}
         {useScrollLayout && !isMobile && (
-          <div className="flex items-center justify-end gap-2" style={{ marginBottom: "1.25rem" }}>
-            {[{ dir: "left" as const, can: canScrollLeft }, { dir: "right" as const, can: canScrollRight }].map(({ dir, can }) => (
+          <div
+            className="flex items-center justify-end gap-2"
+            style={{ marginBottom: "1.25rem" }}
+          >
+            {(
+              [
+                { dir: "left" as const, can: canScrollLeft },
+                { dir: "right" as const, can: canScrollRight },
+              ] as const
+            ).map(({ dir, can }) => (
               <button
                 key={dir}
                 onClick={() => scroll(dir)}
                 disabled={!can}
                 aria-label={`Scroll ${dir}`}
                 style={{
-                  width: 36, height: 36, borderRadius: "50%",
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
                   border: `1px solid ${can ? "#b45309" : "#d6c9b8"}`,
                   background: can ? "rgba(180,83,9,0.07)" : "transparent",
                   color: can ? "#b45309" : "#b8a898",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: can ? "pointer" : "default", transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: can ? "pointer" : "default",
+                  transition: "all 0.2s",
                 }}
               >
                 {dir === "left" ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
@@ -300,10 +373,22 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         {/* Cards */}
         {useScrollLayout ? (
           <div className="relative">
-            <div className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
-              style={{ width: 32, background: "linear-gradient(to right, #f5ede0, transparent)", opacity: canScrollLeft ? 1 : 0 }} />
-            <div className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
-              style={{ width: 32, background: "linear-gradient(to left, #f5ede0, transparent)", opacity: canScrollRight ? 1 : 0 }} />
+            <div
+              className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
+              style={{
+                width: 32,
+                background: "linear-gradient(to right, #f5ede0, transparent)",
+                opacity: canScrollLeft ? 1 : 0,
+              }}
+            />
+            <div
+              className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
+              style={{
+                width: 32,
+                background: "linear-gradient(to left, #f5ede0, transparent)",
+                opacity: canScrollRight ? 1 : 0,
+              }}
+            />
 
             <div
               ref={scrollRef}
@@ -317,14 +402,26 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               }}
             >
               {categories.map((cat, i) => (
-                <ArchCategoryCard key={cat.id} category={cat} index={i} inView={inView} cardWidth={cardWidth} />
+                <CircleCategoryCard
+                  key={cat.id}
+                  category={cat}
+                  index={i}
+                  inView={inView}
+                  cardWidth={cardWidth}
+                />
               ))}
             </div>
           </div>
         ) : (
           <div className="flex flex-wrap justify-center" style={{ gap }}>
             {categories.map((cat, i) => (
-              <ArchCategoryCard key={cat.id} category={cat} index={i} inView={inView} cardWidth={cardWidth} />
+              <CircleCategoryCard
+                key={cat.id}
+                category={cat}
+                index={i}
+                inView={inView}
+                cardWidth={cardWidth}
+              />
             ))}
           </div>
         )}

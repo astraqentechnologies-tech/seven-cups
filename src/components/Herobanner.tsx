@@ -226,7 +226,7 @@ function HeroBanner({ slides = defaultHeroSlides, autoPlayMs = 5500 }: HeroBanne
             />
 
             {/* CTA */}
-            <motion.button
+            {/* <motion.button
               className="pointer-events-auto w-fit flex items-center gap-2 text-white font-bold rounded-full"
               style={{
                 background: `rgba(${accentRgb},0.92)`,
@@ -241,7 +241,7 @@ function HeroBanner({ slides = defaultHeroSlides, autoPlayMs = 5500 }: HeroBanne
             >
               {slide.cta}
               <ArrowRight size={13} />
-            </motion.button>
+            </motion.button> */}
           </motion.div>
         </AnimatePresence>
       </div>
