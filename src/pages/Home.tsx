@@ -11,28 +11,49 @@ import { PRODUCTS } from '../data/productsData'
 const STATIC_CATEGORIES = [
   {
     id: 1,
-    name: 'Herbal-Detox',
+    name: 'Herbal Detox & Liver Wellness Tea',
     slug: 'Herbal-Detox',
-    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781547663/ChatGPT_Image_Jun_15_2026_11_49_53_PM_a9hq0z.png',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315832/ChatGPT_Image_Jul_18_2026_12_19_53_AM_bjvb4c.png',
   },
   {
     id: 2,
-    name: 'Energy-Vitality',
+    name: ' Energy & Vitality Wellness Tea',
     slug: 'Energy-Vitality',
-    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781553116/ChatGPT_Image_Jun_16_2026_01_20_34_AM_v6ob4s.png',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315811/ChatGPT_Image_Jul_18_2026_12_22_08_AM_jfmo8e.png',
   },
   {
     id: 3,
-    name: 'Detox-Antioxidanty',
+    name: ' Detox & Antioxidant Blue Tea',
     slug: 'Detox-Antioxidanty',
-    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781557237/ChatGPT_Image_Jun_16_2026_02_30_15_AM_eyvxq5.png',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315829/ChatGPT_Image_Jul_18_2026_12_18_08_AM_d03bo9.png',
   },
   {
-    id: 4,
-    name: "Women's Wellness-Hormonal Balance",
-    slug: 'Wellness-Hormonal',
-    image_url: 'https://res.cloudinary.com/dlebmdfhr/image/upload/v1781560063/ChatGPT_Image_Jun_16_2026_03_16_57_AM_bsdnyf.png',
+    id: 7,
+    name: "Cardio & Skin Health Wellness Tea",
+    slug: 'skin-health',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315775/ChatGPT_Image_Jul_18_2026_12_27_39_AM_c1yvj5.png',
   },
+  {
+    id: 5,
+    name: "Relaxation & Stress Relief Herbal Tea",
+    slug: 'Relaxation-Stress',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315801/Jul_18_2026_12_26_06_AM_mmwc8e.png',
+  },
+  {
+
+    id: 4,
+    name: "Women's Wellness & Hormonal BalanceTea",
+    slug: 'Wellness-Hormonal',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315811/ChatGPT_Image_Jul_18_2026_12_12_56_AM_donaiu.png',
+  },
+  
+  {
+    id: 6,
+    name: "Digestive & Metabolic Wellness Tea",
+    slug: 'Digestive-Metabolic',
+    image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315769/ChatGPT_Image_Jul_18_2026_12_30_28_AM_kl5uhu.png',
+  },
+  
 ]
 
 export interface ApiProduct {
