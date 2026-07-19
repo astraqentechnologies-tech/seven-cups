@@ -265,7 +265,7 @@ export default function ProductCard({ product, index = 0, accent }: ProductCardP
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.38 }}
                 >
-                  {product.weight_grams}g
+                  {product.weight_grams} Tea Bags
                 </motion.span>
               )}
             </div>

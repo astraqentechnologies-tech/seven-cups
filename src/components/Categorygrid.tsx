@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Category {
@@ -19,22 +18,32 @@ interface CategoryGridProps {
 const ERROR_IMG_SRC =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg==";
 
-// Mobile pe card width calculate karo — 3 cards fit ho
 function useCardSize() {
-  const [cardWidth, setCardWidth] = useState(300);
+  const [cardWidth, setCardWidth] = useState(160);
 
   useEffect(() => {
     const calc = () => {
       const vw = window.innerWidth;
-      if (vw < 640) {
-        // Mobile: 3 cards visible, gap 12px, padding 16px each side
-        const available = vw - 32;
-        const gap = 12 * 2;
-        setCardWidth(Math.floor((available - gap) / 3));
+      if (vw < 480) {
+        // Mobile: 3 cards per row
+        const available = vw - 32; // 16px padding each side
+        const gaps = 12 * 2; // 2 gaps between 3 cards
+        setCardWidth(Math.floor((available - gaps) / 3));
+      } else if (vw < 768) {
+        // Small tablet: 3 cards per row
+        const available = vw - 48;
+        const gaps = 16 * 2;
+        setCardWidth(Math.floor((available - gaps) / 3));
       } else if (vw < 1024) {
-        setCardWidth(160);
+        // Tablet: 4 cards per row
+        const available = vw - 64;
+        const gaps = 24 * 3;
+        setCardWidth(Math.floor((available - gaps) / 4));
       } else {
-        setCardWidth(200);
+        // Desktop: 4 cards per row, max-width 1152px
+        const available = Math.min(vw, 1152) - 64;
+        const gaps = 40 * 3;
+        setCardWidth(Math.floor((available - gaps) / 4));
       }
     };
     calc();
@@ -91,20 +100,19 @@ function CircleCategoryCard({
     category.image_url ||
     "https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg";
 
-  // Circle: height = width
   const circleSize = cardWidth;
   const fontSize = circleSize < 90 ? 11 : circleSize < 140 ? 12 : 14;
-  const ringSize = circleSize + 8; // outer ring thodi badi
+  const ringSize = circleSize + 8;
 
   return (
     <motion.div
-      className="flex-shrink-0 flex flex-col items-center cursor-pointer"
+      className="flex flex-col items-center cursor-pointer"
       style={{ width: cardWidth }}
       initial={{ opacity: 0, y: 28 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{
         duration: 0.5,
-        delay: Math.min(index * 0.1, 0.4),
+        delay: Math.min(index * 0.08, 0.5),
         ease: "easeOut",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -234,32 +242,20 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     return () => io.disconnect();
   }, []);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  // Responsive values
+  const isMobile = cardWidth < 100;
+  const isSmallTablet = cardWidth < 140;
+  const padding = isMobile
+    ? "2rem 1rem 2.5rem"
+    : isSmallTablet
+    ? "3rem 1.5rem 3.5rem"
+    : "4rem 2rem 4.5rem";
 
-  const checkScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
-  };
+  // Gap between cards
+  const gap = isMobile ? 16 : isSmallTablet ? 16 : cardWidth < 180 ? 24 : 40;
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    checkScroll();
-    return () => el.removeEventListener("scroll", checkScroll);
-  }, [categories]);
-
-  const scroll = (dir: "left" | "right") => {
-    scrollRef.current?.scrollBy({ left: dir === "left" ? -340 : 340, behavior: "smooth" });
-  };
-
-  const useScrollLayout = categories.length > 4;
-  const isMobile = cardWidth < 150;
-  const gap = isMobile ? 16 : cardWidth < 180 ? 24 : 40;
+  // Row gap (vertical spacing between rows)
+  const rowGap = isMobile ? 24 : 40;
 
   return (
     <section
@@ -267,7 +263,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
       className="relative overflow-hidden"
       style={{
         background: "#f5ede0",
-        padding: isMobile ? "2.5rem 1rem 3rem" : "4rem 2rem 4.5rem",
+        padding,
       }}
     >
       {/* Background blobs */}
@@ -279,8 +275,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
           width: 360,
           height: 360,
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)",
           filter: "blur(40px)",
         }}
       />
@@ -292,8 +287,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
           width: 300,
           height: 300,
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(180,83,9,0.12) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(180,83,9,0.12) 0%, transparent 70%)",
           filter: "blur(40px)",
         }}
       />
@@ -309,19 +303,20 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
         >
           <p
             style={{
-              fontSize: isMobile ? 14 : 20,
+              fontSize: isMobile ? 13 : 18,
               fontWeight: 600,
               letterSpacing: "0.08em",
               fontFamily: "Georgia, 'Times New Roman', serif",
               color: "#7a5c3a",
               marginBottom: 8,
+              textTransform: "uppercase",
             }}
           >
             Something for Everyone
           </p>
           <h2
             style={{
-              fontSize: isMobile ? 28 : 44,
+              fontSize: isMobile ? 26 : 42,
               fontWeight: 700,
               color: "#356603",
               lineHeight: 1.1,
@@ -333,98 +328,27 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
           </h2>
         </motion.div>
 
-        {/* Scroll buttons — desktop only */}
-        {useScrollLayout && !isMobile && (
-          <div
-            className="flex items-center justify-end gap-2"
-            style={{ marginBottom: "1.25rem" }}
-          >
-            {(
-              [
-                { dir: "left" as const, can: canScrollLeft },
-                { dir: "right" as const, can: canScrollRight },
-              ] as const
-            ).map(({ dir, can }) => (
-              <button
-                key={dir}
-                onClick={() => scroll(dir)}
-                disabled={!can}
-                aria-label={`Scroll ${dir}`}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  border: `1px solid ${can ? "#b45309" : "#d6c9b8"}`,
-                  background: can ? "rgba(180,83,9,0.07)" : "transparent",
-                  color: can ? "#b45309" : "#b8a898",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: can ? "pointer" : "default",
-                  transition: "all 0.2s",
-                }}
-              >
-                {dir === "left" ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Cards */}
-        {useScrollLayout ? (
-          <div className="relative">
-            <div
-              className="absolute left-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
-              style={{
-                width: 32,
-                background: "linear-gradient(to right, #f5ede0, transparent)",
-                opacity: canScrollLeft ? 1 : 0,
-              }}
+        {/* Grid — 4 cards per row, wraps to next row automatically */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isSmallTablet
+              ? "repeat(3, 1fr)"          // mobile + small tablet: 3 per row
+              : "repeat(4, 1fr)",         // tablet+desktop: 4 per row
+            gap: `${rowGap}px ${gap}px`,
+            justifyItems: "center",
+          }}
+        >
+          {categories.map((cat, i) => (
+            <CircleCategoryCard
+              key={cat.id}
+              category={cat}
+              index={i}
+              inView={inView}
+              cardWidth={cardWidth}
             />
-            <div
-              className="absolute right-0 top-0 bottom-0 z-10 pointer-events-none transition-opacity duration-300"
-              style={{
-                width: 32,
-                background: "linear-gradient(to left, #f5ede0, transparent)",
-                opacity: canScrollRight ? 1 : 0,
-              }}
-            />
-
-            <div
-              ref={scrollRef}
-              className="flex overflow-x-auto pt-2 pb-6 px-1"
-              style={{
-                gap,
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-                WebkitOverflowScrolling: "touch",
-                scrollSnapType: "x mandatory",
-              }}
-            >
-              {categories.map((cat, i) => (
-                <CircleCategoryCard
-                  key={cat.id}
-                  category={cat}
-                  index={i}
-                  inView={inView}
-                  cardWidth={cardWidth}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap justify-center" style={{ gap }}>
-            {categories.map((cat, i) => (
-              <CircleCategoryCard
-                key={cat.id}
-                category={cat}
-                index={i}
-                inView={inView}
-                cardWidth={cardWidth}
-              />
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </section>
   );

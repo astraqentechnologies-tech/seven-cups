@@ -680,7 +680,7 @@ export default function ProductDetail({ slug }: Props) {
   const brewingMeta = [
     product.steep_time && { icon: Clock, label: 'Steep time', value: product.steep_time },
     product.temperature && { icon: Thermometer, label: 'Temperature', value: product.temperature },
-    product.weight_grams && { icon: Leaf, label: 'Net weight', value: `${product.weight_grams}g` },
+    product.weight_grams && { icon: Leaf, label: 'Net weight', value: `${product.weight_grams} Tea Bags` },
   ].filter(Boolean) as { icon: any; label: string; value: string }[]
 
   // ── Page ──────────────────────────────────────────────────────────────────────

@@ -1,6 +1,8 @@
 import { Leaf, Instagram, Facebook, Twitter, Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from "../assets/logo.png"; // top pe add karo
+
 
 export default function Footer() {
   const navigate = useNavigate();
@@ -56,13 +58,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-5">
-              <div className="w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-stone-900" />
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                <img src={logo} alt="sevencups logo" className="w-full h-full object-contain" />
               </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-white font-bold text-xl tracking-wide font-serif">Luminary</span>
-                <span className="text-amber-400/70 text-[9px] tracking-[0.3em] uppercase">Fine Teas</span>
-              </div>
+              <span className="text-white font-bold text-xl tracking-wide font-serif">sevencups</span>
+
             </button>
             <p className="text-stone-500 text-sm leading-relaxed mb-6">
               Sourcing the world's finest teas from ancient gardens and bringing them to your cup with reverence and care.

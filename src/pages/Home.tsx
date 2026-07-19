@@ -17,7 +17,7 @@ const STATIC_CATEGORIES = [
   },
   {
     id: 2,
-    name: ' Energy & Vitality Wellness Tea',
+    name: 'Energy & Vitality Wellness Tea',
     slug: 'Energy-Vitality',
     image_url: 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315811/ChatGPT_Image_Jul_18_2026_12_22_08_AM_jfmo8e.png',
   },
