@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { PRODUCTS } from '../data/productsData'; // ⚠️ apna actual path yahan confirm karo
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
+const ADMIN_BASE_URL = 'https://admin.sevencups.in'
 
 export interface Product {
   id: number | string;
@@ -21,7 +21,7 @@ export interface CartItem {
   product_id: number | string;
   quantity: number;
   created_at?: string;
-  products?: Product; // Nested eager-loaded product from Laravel API response
+  products?: Product;
 }
 
 type LocalCartItem = { product: Product; quantity: number };
@@ -44,17 +44,42 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// API image URL → full URL
+function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${ADMIN_BASE_URL}${url}`;
+}
+
+// API product → Cart-compatible Product shape
+function normalizeCartProduct(apiProduct: any): Product {
+  // Primary image dhundo
+  const images: any[] = apiProduct.images ?? [];
+  const primary = images.find((i: any) => i.is_primary === 1) ?? images[0];
+  const imageUrl = primary ? resolveImageUrl(primary.image_url) : resolveImageUrl(apiProduct.image_url);
+
+  return {
+    id: apiProduct.id,
+    name: apiProduct.name,
+    slug: apiProduct.slug,
+    description: apiProduct.description ?? '',
+    price: apiProduct.price,
+    compare_price: apiProduct.compare_price,
+    image_url: imageUrl,
+    weight_grams: apiProduct.weight_grams,
+  };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { token, user } = useAuth(); // Depend on the token to manage session headers
+  const { token } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [localItems, setLocalItems] = useState<LocalCartItem[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('luminary_cart') || '[]');
+      return JSON.parse(localStorage.getItem('seven_cups_cart') || '[]');
     } catch { return []; }
   });
   const [loading, setLoading] = useState(false);
 
-  // Fetch items from Laravel API, then enrich each item using the static PRODUCTS file
   const fetchCart = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -65,37 +90,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
           'Accept': 'application/json'
         }
       });
+
       if (res.ok) {
         const data = await res.json();
-        const rawItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
+        const rawItems: any[] = Array.isArray(data) ? data : (data?.items || data?.data || []);
 
-        // Static PRODUCTS file se hi har cart item ka product data jodo
-        const enrichedItems = rawItems.map((item: any) => {
-          const matchedProduct = PRODUCTS.find(
-            (p: any) => String(p.id) === String(item.product_id)
-          );
-
-          return {
-            ...item,
-            products: matchedProduct
-              ? {
-                  id: matchedProduct.id,
-                  name: matchedProduct.name,
-                  slug: matchedProduct.slug,
-                  description: matchedProduct.description,
-                  price: matchedProduct.price,
-                  compare_price: matchedProduct.compare_price,
-                  image_url: matchedProduct.image_url,
-                  weight_grams: matchedProduct.weight_grams,
-                }
-              : item.products, // agar match na mile to backend wala data hi rehne do (agar ho)
-          };
-        });
+        // Backend ka product field directly use karo — no static file needed
+        const enrichedItems: CartItem[] = rawItems.map((item: any) => ({
+          ...item,
+          products: item.product
+            ? normalizeCartProduct(item.product)
+            : item.products ?? undefined,
+        }));
 
         setItems(enrichedItems);
       }
     } catch (err) {
-      console.error('Failed to pull cart items from Laravel:', err);
+      console.error('Failed to fetch cart:', err);
     } finally {
       setLoading(false);
     }
@@ -107,7 +118,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [token, fetchCart]);
 
   useEffect(() => {
-    localStorage.setItem('luminary_cart', JSON.stringify(localItems));
+    localStorage.setItem('seven_cups_cart', JSON.stringify(localItems));
   }, [localItems]);
 
   const addToCart = async (product: Product, quantity = 1) => {
@@ -115,7 +126,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addToLocalCart(product, quantity);
       return;
     }
-
     try {
       const res = await fetch(`${API_BASE_URL}/cart`, {
         method: 'POST',
@@ -126,19 +136,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ product_id: product.id, quantity })
       });
-
-      if (res.ok) {
-        await fetchCart();
-      }
+      if (res.ok) await fetchCart();
     } catch (err) {
-      console.error('Error adding item to Laravel database cart:', err);
+      console.error('Error adding to cart:', err);
     }
   };
 
   const updateQuantity = async (itemId: number | string, quantity: number) => {
     if (quantity < 1) { await removeFromCart(itemId); return; }
     if (!token) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
         method: 'PUT',
@@ -149,16 +155,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ quantity })
       });
-
       if (res.ok) await fetchCart();
     } catch (err) {
-      console.error('Error updating quantity in Laravel:', err);
+      console.error('Error updating quantity:', err);
     }
   };
 
   const removeFromCart = async (itemId: number | string) => {
     if (!token) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
         method: 'DELETE',
@@ -167,10 +171,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           'Accept': 'application/json'
         }
       });
-
       if (res.ok) await fetchCart();
     } catch (err) {
-      console.error('Error removing item from Laravel cart:', err);
+      console.error('Error removing from cart:', err);
     }
   };
 
@@ -179,7 +182,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLocalItems([]);
       return;
     }
-
     try {
       const res = await fetch(`${API_BASE_URL}/cart`, {
         method: 'DELETE',
@@ -188,15 +190,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           'Accept': 'application/json'
         }
       });
-
       if (res.ok) setItems([]);
     } catch (err) {
-      console.error('Error clearing Laravel cart:', err);
+      console.error('Error clearing cart:', err);
     }
   };
 
   const isInCart = (productId: number | string) => {
-    // Stringify comparison avoids type mismatches (string vs number) across ecosystems
     if (token) return items.some(i => String(i.product_id) === String(productId));
     return localItems.some(i => String(i.product.id) === String(productId));
   };
@@ -205,9 +205,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLocalItems(prev => {
       const existing = prev.find(i => String(i.product.id) === String(product.id));
       if (existing) {
-        return prev.map(i => String(i.product.id) === String(product.id) 
-          ? { ...i, quantity: i.quantity + quantity } 
-          : i
+        return prev.map(i =>
+          String(i.product.id) === String(product.id)
+            ? { ...i, quantity: i.quantity + quantity }
+            : i
         );
       }
       return [...prev, { product, quantity }];
@@ -220,10 +221,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateLocalQuantity = (productId: number | string, quantity: number) => {
     if (quantity < 1) { removeFromLocalCart(productId); return; }
-    setLocalItems(prev => prev.map(i => String(i.product.id) === String(productId) ? { ...i, quantity } : i));
+    setLocalItems(prev =>
+      prev.map(i => String(i.product.id) === String(productId) ? { ...i, quantity } : i)
+    );
   };
 
-  // State mapping calculations safely handling dynamic type casting
   const itemCount = token
     ? items.reduce((sum, i) => sum + i.quantity, 0)
     : localItems.reduce((sum, i) => sum + i.quantity, 0);

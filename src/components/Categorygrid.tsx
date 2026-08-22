@@ -7,12 +7,13 @@ interface Category {
   name: string;
   slug: string;
   image_url: string | null;
-  description?: string;
-  color?: string;
+  description?: string | null;
+  color?: string | null;
 }
 
 interface CategoryGridProps {
   categories: Category[];
+  loading?: boolean;
 }
 
 const ERROR_IMG_SRC =
@@ -25,22 +26,18 @@ function useCardSize() {
     const calc = () => {
       const vw = window.innerWidth;
       if (vw < 480) {
-        // Mobile: 3 cards per row
-        const available = vw - 32; // 16px padding each side
-        const gaps = 12 * 2; // 2 gaps between 3 cards
+        const available = vw - 32;
+        const gaps = 12 * 2;
         setCardWidth(Math.floor((available - gaps) / 3));
       } else if (vw < 768) {
-        // Small tablet: 3 cards per row
         const available = vw - 48;
         const gaps = 16 * 2;
         setCardWidth(Math.floor((available - gaps) / 3));
       } else if (vw < 1024) {
-        // Tablet: 4 cards per row
         const available = vw - 64;
         const gaps = 24 * 3;
         setCardWidth(Math.floor((available - gaps) / 4));
       } else {
-        // Desktop: 4 cards per row, max-width 1152px
         const available = Math.min(vw, 1152) - 64;
         const gaps = 40 * 3;
         setCardWidth(Math.floor((available - gaps) / 4));
@@ -221,7 +218,50 @@ function CircleCategoryCard({
   );
 }
 
-export default function CategoryGrid({ categories }: CategoryGridProps) {
+// Skeleton loader — loading state ke liye
+function CategorySkeleton({ cardWidth }: { cardWidth: number }) {
+  const circleSize = cardWidth;
+  const ringSize = circleSize + 8;
+
+  return (
+    <div className="flex flex-col items-center" style={{ width: cardWidth }}>
+      <div
+        style={{
+          width: ringSize,
+          height: ringSize,
+          borderRadius: "50%",
+          background: "linear-gradient(90deg, #e8d5bc 25%, #f5e8d5 50%, #e8d5bc 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 1.5s infinite",
+        }}
+      />
+      <div
+        style={{
+          marginTop: 12,
+          width: cardWidth * 0.8,
+          height: 12,
+          borderRadius: 6,
+          background: "linear-gradient(90deg, #e8d5bc 25%, #f5e8d5 50%, #e8d5bc 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 1.5s infinite",
+        }}
+      />
+      <div
+        style={{
+          marginTop: 6,
+          width: cardWidth * 0.5,
+          height: 10,
+          borderRadius: 6,
+          background: "linear-gradient(90deg, #e8d5bc 25%, #f5e8d5 50%, #e8d5bc 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 1.5s infinite",
+        }}
+      />
+    </div>
+  );
+}
+
+export default function CategoryGrid({ categories, loading = false }: CategoryGridProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(false);
   const cardWidth = useCardSize();
@@ -242,7 +282,6 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     return () => io.disconnect();
   }, []);
 
-  // Responsive values
   const isMobile = cardWidth < 100;
   const isSmallTablet = cardWidth < 140;
   const padding = isMobile
@@ -251,20 +290,29 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     ? "3rem 1.5rem 3.5rem"
     : "4rem 2rem 4.5rem";
 
-  // Gap between cards
   const gap = isMobile ? 16 : isSmallTablet ? 16 : cardWidth < 180 ? 24 : 40;
-
-  // Row gap (vertical spacing between rows)
   const rowGap = isMobile ? 24 : 40;
+
+  // Shimmer CSS inject — once
+  useEffect(() => {
+    const id = "seven-cups-shimmer";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   return (
     <section
       ref={sectionRef}
       className="relative overflow-hidden"
-      style={{
-        background: "#f5ede0",
-        padding,
-      }}
+      style={{ background: "#f5ede0", padding }}
     >
       {/* Background blobs */}
       <div
@@ -328,26 +376,31 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
           </h2>
         </motion.div>
 
-        {/* Grid — 4 cards per row, wraps to next row automatically */}
+        {/* Grid */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: isSmallTablet
-              ? "repeat(3, 1fr)"          // mobile + small tablet: 3 per row
-              : "repeat(4, 1fr)",         // tablet+desktop: 4 per row
+              ? "repeat(3, 1fr)"
+              : "repeat(4, 1fr)",
             gap: `${rowGap}px ${gap}px`,
             justifyItems: "center",
           }}
         >
-          {categories.map((cat, i) => (
-            <CircleCategoryCard
-              key={cat.id}
-              category={cat}
-              index={i}
-              inView={inView}
-              cardWidth={cardWidth}
-            />
-          ))}
+          {loading
+            ? // Skeleton — 7 placeholders (API mein 7 categories hain)
+              Array.from({ length: 7 }).map((_, i) => (
+                <CategorySkeleton key={i} cardWidth={cardWidth} />
+              ))
+            : categories.map((cat, i) => (
+                <CircleCategoryCard
+                  key={cat.id}
+                  category={cat}
+                  index={i}
+                  inView={inView}
+                  cardWidth={cardWidth}
+                />
+              ))}
         </div>
       </div>
     </section>

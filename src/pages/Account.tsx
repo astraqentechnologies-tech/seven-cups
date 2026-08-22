@@ -270,7 +270,14 @@ function ProfileSection ({
   setErrorMsg: (v: string | null) => void
   saving: boolean
   form: Record<string, string>
-  setForm: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  setForm: React.Dispatch<React.SetStateAction<{
+  name: string
+  email: string
+  phone: string
+  street_address: string
+  city: string
+  country: string
+}>>
   handleSave: () => void
   displayInfo: { name: string; phone: string; address: string; city: string; country: string }
   displayEmail: string

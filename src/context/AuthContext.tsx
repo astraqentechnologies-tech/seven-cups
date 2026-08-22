@@ -6,7 +6,8 @@ import {
   ReactNode
 } from 'react'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
+const API_BASE_URL = 'https://admin.sevencups.in/api'
+const TOKEN_KEY = 'seven_cups_token'
 
 export type UserType = {
   id: number
@@ -25,11 +26,7 @@ type AuthContextType = {
   token: string | null
   profile: UserType | null
   loading: boolean
-  signUp: (
-    email: string,
-    password: string,
-    fullName: string
-  ) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -38,15 +35,14 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider ({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserType | null>(null)
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem('luminary_token')
+    localStorage.getItem(TOKEN_KEY)
   )
   const [loading, setLoading] = useState(true)
   const [profileData, setProfileData] = useState<Partial<UserType> | null>(null)
 
-  // Fetch profiles from Laravel API
   const fetchProfile = async (authToken: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/user`, {
@@ -59,12 +55,13 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
         const userData = await res.json()
         setUser(userData)
       } else {
-        localStorage.removeItem('luminary_token')
+        // Token invalid — logout
+        localStorage.removeItem(TOKEN_KEY)
         setToken(null)
         setUser(null)
       }
     } catch (err) {
-      console.error('Failed to restore user session context:', err)
+      console.error('Failed to restore session:', err)
     } finally {
       setLoading(false)
     }
@@ -73,23 +70,26 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (token) {
       fetchProfile(token)
-      // Also fetch extended profile data
+
+      // Extended profile (phone, address etc.)
       fetch(`${API_BASE_URL}/user/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json'
         }
       })
-        .then(res => res.json())
+        .then(res => res.ok ? res.json() : null)
         .then(data => {
-          setProfileData({
-            phone: data.phone,
-            address: data.address,
-            city: data.city,
-            country: data.country
-          })
+          if (data) {
+            setProfileData({
+              phone: data.phone,
+              address: data.address ?? data.street_address,
+              city: data.city,
+              country: data.country
+            })
+          }
         })
-        .catch(err => console.error('Failed to fetch profile data:', err))
+        .catch(err => console.error('Failed to fetch extended profile:', err))
     } else {
       setLoading(false)
     }
@@ -100,10 +100,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           name: fullName,
           email,
@@ -116,15 +113,15 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         if (data.errors) {
-          const firstErrorKey = Object.keys(data.errors)[0]
-          throw new Error(data.errors[firstErrorKey][0])
+          const firstKey = Object.keys(data.errors)[0]
+          throw new Error(data.errors[firstKey][0])
         }
         throw new Error(data.message || 'Registration failed.')
       }
 
-      localStorage.setItem('luminary_token', data.token)
+      localStorage.setItem(TOKEN_KEY, data.token)
       setUser(data.user)
-      setToken(data.token) // Crucial: Set user data first, then trigger token effect change
+      setToken(data.token)
       setLoading(false)
       return { error: null }
     } catch (error: any) {
@@ -138,10 +135,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ email, password })
       })
 
@@ -149,13 +143,13 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         if (data.errors) {
-          const firstErrorKey = Object.keys(data.errors)[0]
-          throw new Error(data.errors[firstErrorKey][0])
+          const firstKey = Object.keys(data.errors)[0]
+          throw new Error(data.errors[firstKey][0])
         }
         throw new Error(data.message || 'Invalid credentials.')
       }
 
-      localStorage.setItem('luminary_token', data.token)
+      localStorage.setItem(TOKEN_KEY, data.token)
       setUser(data.user)
       setToken(data.token)
       setLoading(false)
@@ -177,7 +171,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
         }
       }).catch(() => {})
     }
-    localStorage.removeItem('luminary_token')
+    localStorage.removeItem(TOKEN_KEY)
     setUser(null)
     setToken(null)
     setProfileData(null)
@@ -185,28 +179,26 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
   }
 
   const refreshProfile = async () => {
-    if (token) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/user/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json'
-          }
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setProfileData({
-            phone: data.phone,
-            address: data.address,
-            city: data.city,
-            country: data.country
-          })
-          // Also refetch user info to keep it in sync
-          await fetchProfile(token)
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/user/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
         }
-      } catch (err) {
-        console.error('Failed to refresh profile:', err)
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setProfileData({
+          phone: data.phone,
+          address: data.address ?? data.street_address,
+          city: data.city,
+          country: data.country
+        })
+        await fetchProfile(token)
       }
+    } catch (err) {
+      console.error('Failed to refresh profile:', err)
     }
   }
 
@@ -229,7 +221,7 @@ export function AuthProvider ({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth () {
+export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
