@@ -1,10 +1,4 @@
-import {
-  motion,
-  AnimatePresence,
-} from "motion/react";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface HeroBannerSlide {
   title: string;
@@ -87,36 +81,21 @@ interface HeroBannerProps {
   autoPlayMs?: number;
 }
 
-function SlideImage({ slide, active }: { slide: HeroBannerSlide; active: boolean }) {
-  return (
-    <div
-      className="absolute inset-0 transition-opacity duration-1000"
-      style={{ opacity: active ? 1 : 0, zIndex: active ? 2 : 1 }}
-    >
-      <img
-        src={slide.image}
-        alt=""
-        className="w-full h-full object-cover"
-        style={{ objectPosition: "center center" }}
-      />
-    </div>
-  );
-}
-
 function HeroBanner({ slides = defaultHeroSlides, autoPlayMs = 5500 }: HeroBannerProps) {
-  const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
+  const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
   const startAuto = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(
-      () => setActiveIdx((i) => (i + 1) % slides.length),
-      autoPlayMs
-    );
+    intervalRef.current = setInterval(() => {
+      setActiveIdx((i) => {
+        setPrevIdx(i);
+        return (i + 1) % slides.length;
+      });
+    }, autoPlayMs);
   }, [slides.length, autoPlayMs]);
 
   useEffect(() => {
@@ -125,7 +104,9 @@ function HeroBanner({ slides = defaultHeroSlides, autoPlayMs = 5500 }: HeroBanne
   }, [startAuto]);
 
   const goTo = (n: number) => {
-    setActiveIdx((n + slides.length) % slides.length);
+    const next = (n + slides.length) % slides.length;
+    setPrevIdx(activeIdx);
+    setActiveIdx(next);
     startAuto();
   };
 
@@ -140,176 +121,61 @@ function HeroBanner({ slides = defaultHeroSlides, autoPlayMs = 5500 }: HeroBanne
     }
   };
 
-  const slide = slides[activeIdx];
-  const accentRgb = slide.accentRgb ?? "180,83,9";
-
   return (
-    <section
-  className="relative w-full overflow-hidden bg-stone-950"
-  style={{
-   height: "46vw",        // mobile pe width ka 56% = landscape ratio maintain
-  maxHeight: "500px",
-  minHeight: "200px",
-  }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* ── Background images ── */}
-      {slides.map((s, i) => (
-        <SlideImage key={i} slide={s} active={i === activeIdx} />
-      ))}
-
-      {/* ── Left-to-right dark gradient ── */}
+    /* Outer wrapper — horizontal padding gives the Blue Tea side gap */
+    <div className="w-full px-3 sm:px-4 py-2">
       <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{ background: "linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.10) 100%)" }}
-      />
-      {/* ── Bottom dark gradient ── */}
-      <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)" }}
-      />
+        className="relative w-full overflow-hidden"
+        style={{
+          /* 3.2:1 aspect ratio — same as Blue Tea banner */
+          aspectRatio: "3.2 / 1",
+          borderRadius: "14px",
+          background: "#0a0a14",
+        }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* ── Images with CSS cross-fade ── */}
+        {slides.map((s, i) => (
+          <img
+            key={i}
+            src={s.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={{
+              borderRadius: "14px",
+              opacity: i === activeIdx ? 1 : 0,
+              transition: "opacity 0.8s ease",
+              zIndex: i === activeIdx ? 2 : 1,
+            }}
+          />
+        ))}
 
-      {/* ── Content ── */}
-      <div className="absolute inset-0 z-30 flex flex-col justify-center pb-10 px-4 sm:px-8 md:px-16 pointer-events-none">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeIdx}
-            className="flex flex-col gap-2 sm:gap-3 max-w-lg"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          >
-            {/* tag pill */}
-            {/* {slide.tag && (
-              <span
-                className="inline-flex items-center gap-1.5 w-fit px-3 py-1 rounded-full text-white font-bold tracking-widest uppercase"
-                style={{
-                  fontSize: "clamp(8px, 1.8vw, 11px)",
-                  background: `rgba(${accentRgb},0.85)`,
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
-                {slide.tag}
-              </span>
-            )} */}
-
-            {/* ── TITLE (naya) ── */}
-            {/* <h1
-              className="text-white font-bold leading-tight"
+        {/* ── Dot indicators — bottom center, minimal ── */}
+        <div
+          className="absolute bottom-2.5 left-1/2 z-10 flex gap-1.5 items-center"
+          style={{ transform: "translateX(-50%)" }}
+        >
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Slide ${i + 1}`}
+              onClick={() => goTo(i)}
               style={{
-                fontSize: "clamp(20px, 5.5vw, 52px)",
-                whiteSpace: "pre-line",
-                textShadow: "0 2px 12px rgba(0,0,0,0.5)",
-              }}
-            >
-              {slide.title}
-            </h1> */}
-
-            {/* subtitle */}
-            {/* <p
-              className="text-white/80 leading-snug"
-              style={{ fontSize: "clamp(11px, 2.8vw, 16px)", maxWidth: "34ch" }}
-            >
-              {slide.subtitle}
-            </p> */}
-
-            {/* divider */}
-            <div
-              className="h-px rounded-full"
-              style={{
-                width: "clamp(60px, 15vw, 120px)",
-                background: `linear-gradient(90deg, rgba(${accentRgb},0.85), transparent)`,
+                width: i === activeIdx ? 22 : 6,
+                height: 5,
+                borderRadius: 999,
+                background: i === activeIdx ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.35)",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                transition: "width 0.3s ease, background 0.3s ease",
               }}
             />
-
-            {/* CTA */}
-            {/* <motion.button
-              className="pointer-events-auto w-fit flex items-center gap-2 text-white font-bold rounded-full"
-              style={{
-                background: `rgba(${accentRgb},0.92)`,
-                backdropFilter: "blur(8px)",
-                fontSize: "clamp(11px, 2.8vw, 14px)",
-                padding: "clamp(7px, 1.8vw, 13px) clamp(14px, 3.5vw, 26px)",
-              }}
-              whileHover={{ scale: 1.05, boxShadow: `0 8px 24px rgba(${accentRgb},0.5)` }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-              onClick={() => navigate("/products")}
-            >
-              {slide.cta}
-              <ArrowRight size={13} />
-            </motion.button> */}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* ── Prev / Next (hidden on mobile) ── */}
-      <button
-        aria-label="prev slide"
-        className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-40 w-9 h-9 rounded-full items-center justify-center text-white"
-        style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(6px)" }}
-        onClick={() => goTo(activeIdx - 1)}
-      >
-        <ChevronLeft size={18} />
-      </button>
-      <button
-        aria-label="next slide"
-        className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-40 w-9 h-9 rounded-full items-center justify-center text-white"
-        style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(6px)" }}
-        onClick={() => goTo(activeIdx + 1)}
-      >
-        <ChevronRight size={18} />
-      </button>
-
-      {/* ── Slide counter (top-right) ── */}
-      <div className="absolute top-3 right-4 z-40 flex items-center gap-1.5">
-        <span className="text-white font-bold tabular-nums" style={{ fontSize: "clamp(12px, 3vw, 18px)" }}>
-          {String(activeIdx + 1).padStart(2, "0")}
-        </span>
-        <div className="w-8 sm:w-12 h-px bg-white/30 relative overflow-hidden rounded-full">
-          <motion.div
-            key={activeIdx}
-            className="absolute inset-y-0 left-0 rounded-full"
-            style={{ background: `rgb(${accentRgb})` }}
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: autoPlayMs / 1000, ease: "linear" }}
-          />
+          ))}
         </div>
-        <span className="text-white/40 font-medium tabular-nums" style={{ fontSize: "clamp(10px, 2.2vw, 14px)" }}>
-          {String(slides.length).padStart(2, "0")}
-        </span>
       </div>
-
-      {/* ── Progress dots (bottom center) ── */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 flex gap-1.5 items-center">
-        {slides.map((_, i) => (
-          <motion.button
-            key={i}
-            aria-label={`Slide ${i + 1}`}
-            className="rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.28)", height: 4 }}
-            animate={{ width: i === activeIdx ? 26 : 7 }}
-            transition={{ duration: 0.3 }}
-            onClick={() => goTo(i)}
-          >
-            {i === activeIdx && (
-              <motion.div
-                key={activeIdx}
-                className="h-full rounded-full"
-                style={{ background: `rgb(${accentRgb})`, originX: 0 }}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: autoPlayMs / 1000, ease: "linear" }}
-              />
-            )}
-          </motion.button>
-        ))}
-      </div>
-    </section>
+    </div>
   );
 }
 

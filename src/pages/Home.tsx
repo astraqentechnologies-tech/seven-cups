@@ -61,7 +61,6 @@ const CATEGORY_IMAGE_FALLBACK: Record<string, string> = {
   'digestive-metabolic': 'https://res.cloudinary.com/pjiarotf/image/upload/v1784315769/ChatGPT_Image_Jul_18_2026_12_30_28_AM_kl5uhu.png',
 }
 
-// API product ko FeaturedTeas-compatible shape mein convert karo
 function normalizeProduct(p: ApiProduct): any {
   const primaryImage = p.images?.find(i => i.is_primary === 1) ?? p.images?.[0]
   const imageUrl = primaryImage
@@ -105,7 +104,6 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
   const [prodLoading, setProdLoading] = useState(true)
 
-  // Categories fetch
   useEffect(() => {
     fetch(`${BASE_URL}/api/categories`)
       .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() })
@@ -124,13 +122,25 @@ export default function Home() {
       .finally(() => setCatLoading(false))
   }, [])
 
-  // Featured products fetch
   useEffect(() => {
     fetch(`${BASE_URL}/api/products`)
       .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json() })
       .then((data: { featured: ApiProduct[]; new_arrival: ApiProduct[]; best_seller: ApiProduct[] }) => {
-        const featured = (data.featured ?? []).slice(0, 4).map(normalizeProduct)
-        setFeaturedProducts(featured)
+        const seen = new Set<number>()
+        const merged: ApiProduct[] = []
+
+        for (const p of [
+          ...(data.featured ?? []),
+          ...(data.new_arrival ?? []),
+          ...(data.best_seller ?? []),
+        ]) {
+          if (!seen.has(p.id)) {
+            seen.add(p.id)
+            merged.push(p)
+          }
+        }
+
+        setFeaturedProducts(merged.map(normalizeProduct))
       })
       .catch(err => console.error('Products fetch failed:', err))
       .finally(() => setProdLoading(false))
@@ -139,7 +149,7 @@ export default function Home() {
   return (
     <div className='min-h-screen bg-stone-50'>
       <HeroBanner slides={defaultHeroSlides} />
-      <CategoryGrid categories={categories} loading={catLoading} />
+      {/* <CategoryGrid categories={categories} loading={catLoading} /> */}
       <FeaturedTeas
         products={featuredProducts}
         loading={prodLoading}
