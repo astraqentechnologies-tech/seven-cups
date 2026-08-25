@@ -122,7 +122,7 @@ export default function Account () {
       city: displayInfo.city !== '—' ? displayInfo.city : '',
       country: displayInfo.country !== '—' ? displayInfo.country : ''
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, orders, profile, user, displayInfo.name, displayEmail])
 
   const handleSave = async () => {
@@ -141,14 +141,15 @@ export default function Account () {
         body: JSON.stringify(form)
       })
 
+      const data = JSON.parse(await res.text())
+
       if (res.ok) {
-        if (refreshProfile) await refreshProfile()
+        await refreshProfile(form)
         setSaved(true)
         setEditing(false)
         setTimeout(() => setSaved(false), 4000)
       } else {
-        const errData = await res.json()
-        setErrorMsg(errData.message || 'Failed to update profile details.')
+        setErrorMsg(data.message || 'Failed to update profile details.')
       }
     } catch (err) {
       console.error('Profile update failed:', err)
@@ -183,7 +184,6 @@ export default function Account () {
     <div className='min-h-screen bg-stone-50 pt-20'>
       <div className='max-w-4xl mx-auto px-6 py-12'>
 
-        {/* ============ HEADER ============ */}
         <header className='flex items-center gap-4 mb-12'>
           <div className='w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center shrink-0'>
             <User className='w-8 h-8 text-amber-600' />
@@ -196,7 +196,6 @@ export default function Account () {
           </div>
         </header>
 
-        {/* ============ TAB NAVIGATION ============ */}
         <nav className='flex gap-2 mb-10 border-b border-stone-200'>
           {[
             { id: 'profile' as const, icon: User, label: 'Profile' },
@@ -217,7 +216,6 @@ export default function Account () {
           ))}
         </nav>
 
-        {/* ============ TAB PANELS ============ */}
         {activeTab === 'profile' ? (
           <ProfileSection
             editing={editing}
@@ -245,10 +243,6 @@ export default function Account () {
   )
 }
 
-/* ===================================================================== */
-/* PROFILE SECTION                                                        */
-/* ===================================================================== */
-
 function ProfileSection ({
   editing,
   setEditing,
@@ -271,13 +265,13 @@ function ProfileSection ({
   saving: boolean
   form: Record<string, string>
   setForm: React.Dispatch<React.SetStateAction<{
-  name: string
-  email: string
-  phone: string
-  street_address: string
-  city: string
-  country: string
-}>>
+    name: string
+    email: string
+    phone: string
+    street_address: string
+    city: string
+    country: string
+  }>>
   handleSave: () => void
   displayInfo: { name: string; phone: string; address: string; city: string; country: string }
   displayEmail: string
@@ -303,7 +297,6 @@ function ProfileSection ({
 
   return (
     <section className='bg-white rounded-3xl border border-stone-100 shadow-sm'>
-      {/* Section header */}
       <div className='flex items-center justify-between px-8 py-6 border-b border-stone-100'>
         <h2 className='text-lg font-bold text-stone-900 font-serif'>
           Personal Information
@@ -319,7 +312,6 @@ function ProfileSection ({
         )}
       </div>
 
-      {/* Status banners */}
       {(saved || errorMsg) && (
         <div className='px-8 pt-6'>
           {saved && (
@@ -342,7 +334,6 @@ function ProfileSection ({
         </div>
       )}
 
-      {/* Body */}
       <div className='px-8 py-8'>
         {editing ? (
           <div className='space-y-8'>
@@ -408,10 +399,6 @@ function ProfileSection ({
   )
 }
 
-/* ===================================================================== */
-/* ORDERS SECTION                                                         */
-/* ===================================================================== */
-
 function OrdersSection ({
   loadingOrders,
   orders,
@@ -466,7 +453,6 @@ function OrderCard ({ order }: { order: Order }) {
 
   return (
     <article className='bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden'>
-      {/* Order meta header */}
       <div className='bg-stone-50 px-8 py-5 border-b border-stone-100 flex flex-wrap gap-6 items-center justify-between'>
         <div className='flex flex-wrap gap-x-8 gap-y-3 text-xs text-stone-400 uppercase tracking-wider font-medium'>
           <div>
@@ -493,7 +479,6 @@ function OrderCard ({ order }: { order: Order }) {
             </span>
           </div>
         </div>
-
         <span
           className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${statusStyle}`}
         >
@@ -501,14 +486,12 @@ function OrderCard ({ order }: { order: Order }) {
         </span>
       </div>
 
-      {/* Order items */}
       <div className='px-8 py-6 divide-y divide-stone-100'>
         {order.items?.map(item => (
           <OrderItemRow key={item.id} item={item} />
         ))}
       </div>
 
-      {/* Shipping address */}
       <div className='px-8 pb-6 flex gap-2 items-start text-stone-500 text-xs'>
         <MapPin className='w-4 h-4 text-stone-400 shrink-0 mt-0.5' />
         <p>

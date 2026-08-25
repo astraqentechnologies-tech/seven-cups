@@ -29,7 +29,8 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
+  refreshProfile: (updatedData?: Partial<UserType & { street_address?: string }>) => Promise<void>
+  loginWithToken: (token: string, userData: UserType) => void
   isAdmin: boolean
 }
 
@@ -55,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await res.json()
         setUser(userData)
       } else {
-        // Token invalid — logout
         localStorage.removeItem(TOKEN_KEY)
         setToken(null)
         setUser(null)
@@ -70,30 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (token) {
       fetchProfile(token)
-
-      // Extended profile (phone, address etc.)
-      fetch(`${API_BASE_URL}/user/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
-      })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data) {
-            setProfileData({
-              phone: data.phone,
-              address: data.address ?? data.street_address,
-              city: data.city,
-              country: data.country
-            })
-          }
-        })
-        .catch(err => console.error('Failed to fetch extended profile:', err))
     } else {
       setLoading(false)
     }
   }, [token])
+
+  const loginWithToken = (authToken: string, userData: UserType) => {
+    localStorage.setItem(TOKEN_KEY, authToken)
+    setToken(authToken)
+    setUser(userData)
+    setLoading(false)
+  }
 
   const signUp = async (email: string, password: string, fullName: string) => {
     setLoading(true)
@@ -108,9 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password_confirmation: password
         })
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         if (data.errors) {
           const firstKey = Object.keys(data.errors)[0]
@@ -118,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         throw new Error(data.message || 'Registration failed.')
       }
-
       localStorage.setItem(TOKEN_KEY, data.token)
       setUser(data.user)
       setToken(data.token)
@@ -138,9 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ email, password })
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         if (data.errors) {
           const firstKey = Object.keys(data.errors)[0]
@@ -148,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         throw new Error(data.message || 'Invalid credentials.')
       }
-
       localStorage.setItem(TOKEN_KEY, data.token)
       setUser(data.user)
       setToken(data.token)
@@ -178,27 +159,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }
 
-  const refreshProfile = async () => {
-    if (!token) return
+  const refreshProfile = async (updatedData?: Partial<UserType & { street_address?: string }>) => {
+    if (!token || !updatedData) return
     try {
       const res = await fetch(`${API_BASE_URL}/user/profile`, {
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        }
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedData)
       })
       if (res.ok) {
-        const data = await res.json()
+        // Backend profile fields return nahi karta — directly updatedData se set karo
         setProfileData({
-          phone: data.phone,
-          address: data.address ?? data.street_address,
-          city: data.city,
-          country: data.country
+          phone: updatedData.phone,
+          address: updatedData.street_address ?? updatedData.address,
+          city: updatedData.city,
+          country: updatedData.country
         })
-        await fetchProfile(token)
+        await fetchProfile(token) // name/email refresh
       }
     } catch (err) {
-      console.error('Failed to refresh profile:', err)
+      console.error('Failed to update profile:', err)
     }
   }
 
@@ -213,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         refreshProfile,
+        loginWithToken,
         isAdmin: user?.role === 'admin'
       }}
     >

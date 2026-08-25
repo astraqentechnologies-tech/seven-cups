@@ -116,15 +116,15 @@ export default function Footer() {
             <ul className="flex flex-col gap-4">
               <li className="flex items-start gap-3">
                 <Mail className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <span className="text-stone-500 text-sm">hello@luminarytea.com</span>
+                <span className="text-stone-500 text-sm">sevencupsofficial@gmail.com</span>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <span className="text-stone-500 text-sm">+1 (555) 234-5678</span>
+                <span className="text-stone-500 text-sm">+91 7980505146</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <span className="text-stone-500 text-sm">42 Garden Lane, San Francisco, CA 94102</span>
+                <span className="text-stone-500 text-sm">S S Enterprise, 100, Dewangazi Road, Bally – Howrah, West Bengal – 711201, India</span>
               </li>
             </ul>
           </div>
