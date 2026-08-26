@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
+const BASE_URL = 'https://admin.sevencups.in'
+
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -15,6 +17,7 @@ const statusColors: Record<string, string> = {
 }
 
 // Map raw API order to frontend shape
+
 function mapOrder (o: any) {
   return {
     id: o.id,
@@ -29,14 +32,19 @@ function mapOrder (o: any) {
     subtotal: parseFloat(o.total_amount),
     shipping_cost: 0,
     total: parseFloat(o.total_amount),
-    order_items: (o.items || []).map((item: any) => ({
-      id: item.id,
-      product_name: item.product?.name || 'Unknown Product',
-      product_image: item.product?.image_url || '',
-      quantity: item.quantity,
-      unit_price: parseFloat(item.price),
-      total_price: parseFloat(item.price) * item.quantity
-    }))
+    order_items: (o.items || []).map((item: any) => {
+      const rawImg = item.product?.primary_image?.image_url
+      return {
+        id: item.id,
+        product_name: item.product?.name || 'Unknown Product',
+        product_image: rawImg
+          ? rawImg.startsWith('http') ? rawImg : `${BASE_URL}${rawImg}`
+          : '',
+        quantity: item.quantity,
+        unit_price: parseFloat(item.price),
+        total_price: parseFloat(item.price) * item.quantity
+      }
+    })
   }
 }
 

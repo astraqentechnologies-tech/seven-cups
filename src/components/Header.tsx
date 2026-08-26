@@ -22,15 +22,15 @@ import logo from "../assets/logo.png";
 
 // ─── Nav links ────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
-  { label: "Bestseller",        path: "/bestseller"                        },
-  { label: "Sampler Pack",      path: "/sampler"                           },
-  { label: "Wellness",          path: "/wellness",  hasDropdown: true      },
-  { label: "New Arrivals",      path: "/products"                          },
-  { label: "Combo",             path: "/combo"                             },
-  { label: "Corporate Gifting", path: "/corporate"                         },
-  { label: "About Us",          path: "/about"                             },
-  { label: "Blog",              path: "/blog"                              },
-  { label: "Contact",           path: "/contact"                           },
+  { label: "Bestseller", path: "/bestseller" },
+  { label: "Sampler Pack", path: "/sampler" },
+  { label: "Wellness", path: "/wellness", hasDropdown: true },
+  { label: "New Arrivals", path: "/products" },
+  { label: "Combo", path: "/combo" },
+  { label: "Corporate Gifting", path: "/corporate" },
+  { label: "About Us", path: "/about" },
+  { label: "Blog", path: "/blog" },
+  { label: "Contact", path: "/contact" },
 ];
 
 // ─── Promo messages ───────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ function PromoBar() {
       }}
     >
       <motion.div
-        className="flex whitespace-nowrap gap-8 text-[18px] font-medium tracking-widest"
+        className="flex whitespace-nowrap gap-8 text-[12px] font-medium tracking-widest"
         animate={{ x: ["0%", "-33.33%"] }}
         transition={{
           duration: 5,
@@ -283,6 +283,8 @@ function SearchOverlay({ open, onClose }) {
 // ─── User Menu ────────────────────────────────────────────────────────────────
 function UserMenu({ user }) {
   const navigate = useNavigate();
+  const { signOut } = useAuth(); // ← logout → signOut
+
   const [open, setOpen] = useState(false);
 
   if (!user) {
@@ -320,9 +322,9 @@ function UserMenu({ user }) {
                 <p className="text-xs text-amber-600">Tea Enthusiast</p>
               </div>
               {[
-                { label: "My Account", path: "/account",  Icon: User     },
-                { label: "My Orders",  path: "/orders",   Icon: Package  },
-                { label: "Settings",   path: "/settings", Icon: Settings },
+                { label: "My Account", path: "/account", Icon: User },
+                { label: "My Orders", path: "/orders", Icon: Package },
+                { label: "Settings", path: "/settings", Icon: Settings },
               ].map(({ label, path, Icon }) => (
                 <motion.button
                   key={path}
@@ -338,6 +340,7 @@ function UserMenu({ user }) {
               <motion.button
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
                 whileHover={{ x: 3 }}
+                onClick={async () => { await signOut(); setOpen(false); navigate("/"); }}
               >
                 <LogOut size={14} className="opacity-70" />
                 Sign Out
@@ -354,6 +357,8 @@ function UserMenu({ user }) {
 function MobileDrawer({ open, onClose, user }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { signOut } = useAuth(); // ← add this
+
   const go = (path) => { navigate(path); onClose(); };
 
   return (
@@ -421,8 +426,8 @@ function MobileDrawer({ open, onClose, user }) {
               {user ? (
                 <>
                   {[
-                    { label: "My Account", path: "/account", Icon: User    },
-                    { label: "My Orders",  path: "/orders",  Icon: Package },
+                    { label: "My Account", path: "/account", Icon: User },
+                    { label: "My Orders", path: "/orders", Icon: Package },
                   ].map(({ label, path, Icon }, i) => (
                     <motion.button
                       key={path}
@@ -443,6 +448,7 @@ function MobileDrawer({ open, onClose, user }) {
                     transition={{ delay: 0.55 }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors"
                     whileHover={{ x: 4 }}
+                    onClick={async () => { await signOut(); onClose(); navigate("/"); }}
                   >
                     <LogOut size={15} />
                     Sign Out
@@ -482,10 +488,10 @@ export default function Header() {
   const { itemCount } = useCart();
   const { user } = useAuth();
 
-  const [menuOpen, setMenuOpen]     = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [scrolled, setScrolled]     = useState(false);
-  const [wishPulse, setWishPulse]   = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [wishPulse, setWishPulse] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);

@@ -8,6 +8,7 @@ import {
 
 const API_BASE_URL = 'https://admin.sevencups.in/api'
 const TOKEN_KEY = 'seven_cups_token'
+const PROFILE_KEY = 'seven_cups_profile' // ← NEW
 
 export type UserType = {
   id: number
@@ -42,7 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem(TOKEN_KEY)
   )
   const [loading, setLoading] = useState(true)
-  const [profileData, setProfileData] = useState<Partial<UserType> | null>(null)
+
+  // ← NEW: localStorage se initialize karo
+  const [profileData, setProfileData] = useState<Partial<UserType> | null>(() => {
+    try {
+      const saved = localStorage.getItem(PROFILE_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
 
   const fetchProfile = async (authToken: string) => {
     try {
@@ -57,8 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData)
       } else {
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(PROFILE_KEY) // ← NEW
         setToken(null)
         setUser(null)
+        setProfileData(null) // ← NEW
       }
     } catch (err) {
       console.error('Failed to restore session:', err)
@@ -153,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }).catch(() => {})
     }
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(PROFILE_KEY) // ← NEW
     setUser(null)
     setToken(null)
     setProfileData(null)
@@ -172,14 +185,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(updatedData)
       })
       if (res.ok) {
-        // Backend profile fields return nahi karta — directly updatedData se set karo
-        setProfileData({
+        const newProfile = {
           phone: updatedData.phone,
           address: updatedData.street_address ?? updatedData.address,
           city: updatedData.city,
           country: updatedData.country
-        })
-        await fetchProfile(token) // name/email refresh
+        }
+        setProfileData(newProfile)
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile)) // ← NEW
+        await fetchProfile(token)
       }
     } catch (err) {
       console.error('Failed to update profile:', err)

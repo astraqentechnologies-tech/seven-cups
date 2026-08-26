@@ -23,6 +23,8 @@ type ShippingForm = {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
+const BASE_URL = 'https://admin.sevencups.in'
+
 
 const countries = [
   'United States',
@@ -77,20 +79,25 @@ export default function Checkout () {
       </div>
     )
   }
+const displayItems = items.map(item => {
+  const productData = item.product || item.products  // pehle item.product lo
+  const rawImageUrl = productData?.primary_image?.image_url
+  const imageUrl = rawImageUrl
+    ? rawImageUrl.startsWith('http')
+      ? rawImageUrl
+      : `${BASE_URL}${rawImageUrl}`
+    : 'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'
 
-  const displayItems = items.map(item => {
-    const productData = item.products || (item as any).product
-    return {
-      name: productData?.name || 'Premium Tea Blend',
-      image:
-        productData?.image_url ||
-        'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg',
-      price: Number(productData?.price || 0),
-      quantity: item.quantity,
-      productId: item.product_id
-    }
-  })
+  return {
+    name: productData?.name || 'Premium Tea Blend',
+    image: imageUrl,
+    price: Number(productData?.price || 0),
+    quantity: item.quantity,
+    productId: item.product_id
+  }
+})
 
+  
   const shipping = total >= 50 ? 0 : 5.99
   const grandTotal = total + shipping
 

@@ -131,7 +131,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-stone-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-stone-600 text-sm">© 2026 Luminary Fine Teas. All rights reserved.</p>
+          <p className="text-stone-600 text-sm">© 2026 Sevencups. All rights reserved.</p>
           <div className="flex gap-6">
             {['Privacy Policy', 'Terms of Service', 'Shipping Policy'].map(item => (
               <button key={item} className="text-stone-600 hover:text-stone-400 text-xs transition-colors">

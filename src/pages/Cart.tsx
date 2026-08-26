@@ -1,3 +1,5 @@
+  const BASE_URL = 'https://admin.sevencups.in'
+
 // import { useState, useEffect, useRef } from 'react';
 // import { ShoppingCart, Plus, Minus, Trash2, ArrowRight, Tag, Sparkles } from 'lucide-react';
 // import { useNavigate } from 'react-router-dom';
@@ -612,28 +614,35 @@ export default function Cart() {
   };
 
   // ✅ image_url sahi, price aur comparePrice Number() mein wrap
-  const displayItems = user
-    ? items.map(item => ({
+
+const displayItems = user
+  ? items.map(item => {
+      const p = item.product || item.products
+      const rawImg = p?.primary_image?.image_url
+      const image = rawImg
+        ? rawImg.startsWith('http') ? rawImg : `${BASE_URL}${rawImg}`
+        : ''
+      return {
         id: item.id,
-        name: item.products?.name || '',
-        image: item.products?.image_url || '',
-        price: Number(item.products?.price || 0),
-        comparePrice: Number(item.products?.compare_price || 0),
+        name: p?.name || '',
+        image,
+        price: Number(p?.price || 0),
+        comparePrice: Number(p?.compare_price || 0),
         quantity: item.quantity,
         onQty: (q: number) => updateQuantity(item.id, q),
         onRemove: () => handleRemove(item.id),
-      }))
-    : localItems.map(item => ({
-        id: item.product.id,
-        name: item.product.name,
-        image: item.product.image_url || '',
-        price: Number(item.product.price || 0),
-        comparePrice: Number(item.product.compare_price || 0),
-        quantity: item.quantity,
-        onQty: (q: number) => updateLocalQuantity(item.product.id, q),
-        onRemove: () => handleRemove(item.product.id),
-      }));
-
+      }
+    })
+  : localItems.map(item => ({
+      id: item.product.id,
+      name: item.product.name,
+      image: item.product.image_url || '',
+      price: Number(item.product.price || 0),
+      comparePrice: Number(item.product.compare_price || 0),
+      quantity: item.quantity,
+      onQty: (q: number) => updateLocalQuantity(item.product.id, q),
+      onRemove: () => handleRemove(item.product.id),
+    }))
   const shipping = total >= 500 ? 0 : 59;
 
   const addRipple = (e: React.MouseEvent<HTMLButtonElement>, btn: string) => {
