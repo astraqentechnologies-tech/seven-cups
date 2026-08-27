@@ -17,7 +17,7 @@ import Checkout from './pages/Checkout';
 import Account from './pages/Account';
 import Orders from './pages/Orders';
 import Admin from './pages/Admin';
-import ComboDetail from './pages/ComboDetail'
+import ComboDetail from './pages/Combodetail'
 
 function ProductDetailWrapper() {
   const { slug } = useParams<{ slug: string }>();
