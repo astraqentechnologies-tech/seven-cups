@@ -5,6 +5,7 @@ import CategoryGrid from '../components/Categorygrid'
 import FeaturedTeas from '../components/FeaturedTeas'
 import WhyChooseUs from '../components/Whychooseus'
 import OurStory from '../components/Ourstory'
+import ComboTeas from '../components/ComboTeas'
 
 const BASE_URL = 'https://admin.sevencups.in'
 
@@ -155,6 +156,8 @@ export default function Home() {
         loading={prodLoading}
         onViewAll={() => navigate('/products')}
       />
+      <ComboTeas />   
+
       <WhyChooseUs />
       <OurStory />
     </div>

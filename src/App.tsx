@@ -17,10 +17,15 @@ import Checkout from './pages/Checkout';
 import Account from './pages/Account';
 import Orders from './pages/Orders';
 import Admin from './pages/Admin';
+import ComboDetail from './pages/ComboDetail'
 
 function ProductDetailWrapper() {
   const { slug } = useParams<{ slug: string }>();
   return <ProductDetail slug={slug!} />;
+}
+function ComboDetailWrapper() {
+  const { slug } = useParams()
+  return <ComboDetail slug={slug ?? ''} />
 }
 
 function AppInner() {
@@ -46,6 +51,7 @@ function AppInner() {
           <Route path="/about" element={<About />} />
           <Route path="/products" element={<Products />} />
           <Route path="/product/:slug" element={<ProductDetailWrapper />} />
+          <Route path="/combo/:slug" element={<ComboDetailWrapper />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/cart" element={<Cart />} />
