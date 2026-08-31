@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CheckCircle,
   ArrowRight,
   Package,
   CreditCard,
-  ChevronLeft
+  ChevronLeft,
+  Zap
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
@@ -25,7 +26,6 @@ type ShippingForm = {
 const API_BASE_URL = import.meta.env.VITE_API_URL
 const BASE_URL = 'https://admin.sevencups.in'
 
-
 const countries = [
   'United States',
   'United Kingdom',
@@ -39,10 +39,57 @@ const countries = [
   'Other'
 ]
 
-export default function Checkout () {
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance
+  }
+}
+
+interface RazorpayOptions {
+  key: string
+  amount: number
+  currency: string
+  name: string
+  description: string
+  order_id: string
+  handler: (response: RazorpayResponse) => void
+  prefill: {
+    name: string
+    email: string
+    contact: string
+  }
+  config?: {
+    display?: {
+      blocks?: Record<string, unknown>
+      sequence?: string[]
+      preferences?: {
+        show_default_blocks?: boolean
+      }
+    }
+  }
+  theme: {
+    color: string
+  }
+  modal?: {
+    ondismiss?: () => void
+  }
+}
+
+interface RazorpayInstance {
+  open: () => void
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
+}
+
+export default function Checkout() {
   const navigate = useNavigate()
   const { user, token, profile } = useAuth()
-  const { items, localItems, total, clearCart } = useCart()
+  const { items, total, clearCart } = useCart()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<ShippingForm>({
     name: profile?.name || user?.name || '',
@@ -50,13 +97,26 @@ export default function Checkout () {
     phone: '',
     address: '',
     city: '',
-    country: 'United States',
+    country: 'India',
     zip: '',
     notes: '',
-    payment: 'cod'
+    payment: 'razorpay'
   })
   const [placing, setPlacing] = useState(false)
   const [orderId, setOrderId] = useState('')
+
+  // Load Razorpay SDK dynamically
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    document.body.appendChild(script)
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
 
   if (!user) {
     return (
@@ -79,29 +139,30 @@ export default function Checkout () {
       </div>
     )
   }
-const displayItems = items.map(item => {
-  const productData = item.product || item.products  // pehle item.product lo
-  const rawImageUrl = productData?.primary_image?.image_url
-  const imageUrl = rawImageUrl
-    ? rawImageUrl.startsWith('http')
-      ? rawImageUrl
-      : `${BASE_URL}${rawImageUrl}`
-    : 'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'
 
-  return {
-    name: productData?.name || 'Premium Tea Blend',
-    image: imageUrl,
-    price: Number(productData?.price || 0),
-    quantity: item.quantity,
-    productId: item.product_id
-  }
-})
+  const displayItems = items.map(item => {
+    const productData = item.product || item.products
+    const rawImageUrl = productData?.primary_image?.image_url
+    const imageUrl = rawImageUrl
+      ? rawImageUrl.startsWith('http')
+        ? rawImageUrl
+        : `${BASE_URL}${rawImageUrl}`
+      : 'https://images.pexels.com/photos/1638280/pexels-photo-1638280.jpeg'
 
-  
+    return {
+      name: productData?.name || 'Premium Tea Blend',
+      image: imageUrl,
+      price: Number(productData?.price || 0),
+      quantity: item.quantity,
+      productId: item.product_id
+    }
+  })
+
   const shipping = total >= 50 ? 0 : 5.99
   const grandTotal = total + shipping
 
-  const handlePlaceOrder = async () => {
+  // ─── COD / Bank Transfer Order ────────────────────────────────────────────────
+  const handleCODOrder = async () => {
     if (displayItems.length === 0) return
     setPlacing(true)
 
@@ -118,8 +179,7 @@ const displayItems = items.map(item => {
       items: displayItems.map(item => ({
         product_id: item.productId,
         quantity: item.quantity,
-        price: item.price,
-        
+        price: item.price
       }))
     }
 
@@ -138,18 +198,175 @@ const displayItems = items.map(item => {
 
       if (res.ok) {
         await clearCart()
-        setOrderId(`#LUM-${data.order_id || Date.now()}`)
+        setOrderId(`#SC-${data.order_id || Date.now()}`)
         setStep(3)
       } else {
-        alert(data.message || 'Failed to submit order to Laravel.')
+        alert(data.message || 'Order submit karne mein problem aayi.')
       }
     } catch (err) {
-      console.error('Checkout processing failure:', err)
+      console.error('Checkout error:', err)
+      alert('Network error. Please try again.')
     } finally {
       setPlacing(false)
     }
   }
 
+  // ─── Razorpay Order Flow ──────────────────────────────────────────────────────
+  const handleRazorpayOrder = async () => {
+    if (displayItems.length === 0) return
+    if (!window.Razorpay) {
+      alert('Payment gateway load nahi hua. Please refresh karein.')
+      return
+    }
+
+    setPlacing(true)
+
+    try {
+      // FIX: Rupees mein bhejo — backend khud paise mein convert karega
+      const amountInRupees = Math.round(grandTotal)
+
+      const createRes = await fetch(`${BASE_URL}/api/razorpay/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ amount: amountInRupees })
+      })
+
+      const createData = await createRes.json()
+
+      if (!createRes.ok || !createData.order_id) {
+        alert(createData.message || 'Payment order create karne mein dikkat aayi.')
+        setPlacing(false)
+        return
+      }
+
+      const { key, order_id, amount } = createData
+
+      // FIX: UPI/Scanner show karne ke liye config add kiya
+      const options: RazorpayOptions = {
+        key,
+        amount,
+        currency: 'INR',
+        name: 'Seven Cups',
+        description: 'Premium Tea Order',
+        order_id,
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone  // valid 10-digit Indian number hona chahiye
+        },
+        // UPI scanner force show karne ke liye
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay via UPI',
+                instruments: [
+                  { method: 'upi' }
+                ]
+              },
+              other: {
+                name: 'Other Payment Modes',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' }
+                ]
+              }
+            },
+            sequence: ['block.upi', 'block.other'],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        },
+        theme: {
+          color: '#78350f'
+        },
+        handler: async (response: RazorpayResponse) => {
+          await verifyAndCreateOrder(response, order_id)
+        },
+        modal: {
+          ondismiss: () => {
+            setPlacing(false)
+          }
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.open()
+    } catch (err) {
+      console.error('Razorpay init error:', err)
+      alert('Payment gateway mein error aaya. Please try again.')
+      setPlacing(false)
+    }
+  }
+
+  // ─── Verify Payment + Save Order ──────────────────────────────────────────────
+  const verifyAndCreateOrder = async (
+    response: RazorpayResponse,
+    rzpOrderId: string
+  ) => {
+    try {
+      const payload = {
+        razorpay_order_id: response.razorpay_order_id || rzpOrderId,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+        full_name: form.name,
+        email: form.email,
+        phone: form.phone,
+        street_address: form.address,
+        city: form.city,
+        zip_postal: form.zip,
+        country: form.country,
+        notes: form.notes,
+        items: displayItems.map(item => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      }
+
+      const verifyRes = await fetch(`${BASE_URL}/api/razorpay/verify-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const verifyData = await verifyRes.json()
+
+      if (verifyRes.ok && verifyData.success !== false) {
+        await clearCart()
+        setOrderId(`#SC-${verifyData.order_id || response.razorpay_payment_id}`)
+        setStep(3)
+      } else {
+        alert(verifyData.message || 'Payment verification failed. Please contact support.')
+        setPlacing(false)
+      }
+    } catch (err) {
+      console.error('Payment verify error:', err)
+      alert('Verification mein error. Please contact support with payment ID.')
+      setPlacing(false)
+    }
+  }
+
+  // ─── Main Place Order Handler ──────────────────────────────────────────────────
+  const handlePlaceOrder = async () => {
+    if (form.payment === 'razorpay') {
+      await handleRazorpayOrder()
+    } else {
+      await handleCODOrder()
+    }
+  }
+
+  // ─── Success Screen ────────────────────────────────────────────────────────────
   if (step === 3) {
     return (
       <div className='min-h-screen bg-stone-50 pt-20 flex items-center justify-center px-4'>
@@ -193,6 +410,7 @@ const displayItems = items.map(item => {
   return (
     <div className='min-h-screen bg-stone-50 pt-20'>
       <div className='max-w-6xl mx-auto px-6 py-12'>
+
         {/* Progress Timeline */}
         <div className='flex items-center justify-center gap-4 mb-12'>
           {[
@@ -220,8 +438,11 @@ const displayItems = items.map(item => {
         </div>
 
         <div className='grid grid-cols-1 lg:grid-cols-5 gap-10'>
-          {/* Main Action Forms */}
+
+          {/* Main Forms */}
           <div className='lg:col-span-3'>
+
+            {/* ── Step 1: Shipping ── */}
             {step === 1 && (
               <div className='bg-white rounded-3xl border border-stone-100 p-8 shadow-sm'>
                 <h2 className='text-2xl font-bold text-stone-900 font-serif mb-7'>Shipping Details</h2>
@@ -229,10 +450,10 @@ const displayItems = items.map(item => {
                   {[
                     { label: 'Full Name', key: 'name', placeholder: 'Your name', span: 2 },
                     { label: 'Email', key: 'email', placeholder: 'you@example.com', type: 'email' },
-                    { label: 'Phone', key: 'phone', placeholder: '+1 555 000 0000' },
+                    { label: 'Phone', key: 'phone', placeholder: '+91 99999 99999', type: 'tel' },
                     { label: 'Street Address', key: 'address', placeholder: '123 Garden St', span: 2 },
-                    { label: 'City', key: 'city', placeholder: 'San Francisco' },
-                    { label: 'ZIP / Postal', key: 'zip', placeholder: '94102' }
+                    { label: 'City', key: 'city', placeholder: 'Mumbai' },
+                    { label: 'ZIP / Postal', key: 'zip', placeholder: '400001' }
                   ].map(field => (
                     <div key={field.key} className={field.span === 2 ? 'col-span-2' : ''}>
                       <label className='block text-stone-600 text-sm font-medium mb-2'>{field.label}</label>
@@ -268,7 +489,7 @@ const displayItems = items.map(item => {
                 </div>
                 <button
                   onClick={() => setStep(2)}
-                  disabled={!form.name || !form.email || !form.address}
+                  disabled={!form.name || !form.email || !form.address || !form.phone}
                   className='mt-7 w-full flex items-center justify-center gap-2 py-4 bg-stone-900 hover:bg-amber-600 text-white font-bold rounded-xl transition-all disabled:opacity-40'
                 >
                   Continue to Review <ArrowRight className='w-4 h-4' />
@@ -276,6 +497,7 @@ const displayItems = items.map(item => {
               </div>
             )}
 
+            {/* ── Step 2: Review & Payment ── */}
             {step === 2 && (
               <div className='bg-white rounded-3xl border border-stone-100 p-8 shadow-sm'>
                 <button
@@ -286,58 +508,126 @@ const displayItems = items.map(item => {
                 </button>
                 <h2 className='text-2xl font-bold text-stone-900 font-serif mb-6'>Review & Payment</h2>
 
+                {/* Delivery Address Summary */}
                 <div className='bg-stone-50 rounded-2xl p-5 mb-6 border border-stone-100'>
                   <p className='text-stone-500 text-xs uppercase tracking-wide font-medium mb-3'>Delivering to</p>
                   <p className='font-bold text-stone-800'>{form.name}</p>
                   <p className='text-stone-500 text-sm'>{form.address}, {form.city}, {form.zip}</p>
                   <p className='text-stone-500 text-sm'>{form.country}</p>
-                  <p className='text-stone-500 text-sm'>{form.email}</p>
+                  <p className='text-stone-500 text-sm'>{form.email} · {form.phone}</p>
                 </div>
 
+                {/* Payment Method */}
                 <div className='mb-6'>
                   <p className='text-stone-700 font-semibold text-sm mb-3 flex items-center gap-2'>
                     <CreditCard className='w-4 h-4 text-amber-500' /> Payment Method
                   </p>
                   <div className='space-y-3'>
-                    {[
-                      { value: 'cod', label: 'Cash on Delivery', sub: 'Pay when your order arrives' },
-                      { value: 'bank', label: 'Bank Transfer', sub: 'Details will be sent via email' }
-                    ].map(pm => (
-                      <label
-                        key={pm.value}
-                        className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                          form.payment === pm.value ? 'border-amber-400 bg-amber-50' : 'border-stone-200 hover:border-amber-300'
-                        }`}
-                      >
-                        <input
-                          type='radio'
-                          value={pm.value}
-                          checked={form.payment === pm.value}
-                          onChange={e => setForm(f => ({ ...f, payment: e.target.value }))}
-                          className='mt-0.5'
-                        />
-                        <div>
-                          <p className='font-semibold text-stone-800 text-sm'>{pm.label}</p>
-                          <p className='text-stone-400 text-xs'>{pm.sub}</p>
+
+                    {/* Razorpay - Online Payment */}
+                    <label
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        form.payment === 'razorpay'
+                          ? 'border-amber-400 bg-amber-50'
+                          : 'border-stone-200 hover:border-amber-300'
+                      }`}
+                    >
+                      <input
+                        type='radio'
+                        value='razorpay'
+                        checked={form.payment === 'razorpay'}
+                        onChange={e => setForm(f => ({ ...f, payment: e.target.value }))}
+                        className='mt-0.5'
+                      />
+                      <div className='flex-1'>
+                        <div className='flex items-center gap-2'>
+                          <Zap className='w-4 h-4 text-amber-500' />
+                          <p className='font-semibold text-stone-800 text-sm'>Online Payment</p>
+                          <span className='text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium'>
+                            Recommended
+                          </span>
                         </div>
-                      </label>
-                    ))}
+                        <p className='text-stone-400 text-xs mt-0.5'>
+                          UPI, Scanner, Cards, Net Banking, Wallets via Razorpay
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* COD */}
+                    <label
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        form.payment === 'cod'
+                          ? 'border-amber-400 bg-amber-50'
+                          : 'border-stone-200 hover:border-amber-300'
+                      }`}
+                    >
+                      <input
+                        type='radio'
+                        value='cod'
+                        checked={form.payment === 'cod'}
+                        onChange={e => setForm(f => ({ ...f, payment: e.target.value }))}
+                        className='mt-0.5'
+                      />
+                      <div>
+                        <p className='font-semibold text-stone-800 text-sm'>Cash on Delivery</p>
+                        <p className='text-stone-400 text-xs'>Pay when your order arrives</p>
+                      </div>
+                    </label>
+
+                    {/* Bank Transfer */}
+                    <label
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        form.payment === 'bank'
+                          ? 'border-amber-400 bg-amber-50'
+                          : 'border-stone-200 hover:border-amber-300'
+                      }`}
+                    >
+                      <input
+                        type='radio'
+                        value='bank'
+                        checked={form.payment === 'bank'}
+                        onChange={e => setForm(f => ({ ...f, payment: e.target.value }))}
+                        className='mt-0.5'
+                      />
+                      <div>
+                        <p className='font-semibold text-stone-800 text-sm'>Bank Transfer</p>
+                        <p className='text-stone-400 text-xs'>Details will be sent via email</p>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
+                {/* Place Order Button */}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={placing}
-                  className='w-full flex items-center justify-center gap-2 py-4 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold rounded-xl transition-all text-sm disabled:opacity-50'
+                  className={`w-full flex items-center justify-center gap-2 py-4 font-bold rounded-xl transition-all text-sm disabled:opacity-50 ${
+                    form.payment === 'razorpay'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-stone-900'
+                      : 'bg-stone-900 hover:bg-amber-600 text-white'
+                  }`}
                 >
                   <CheckCircle className='w-5 h-5' />
-                  {placing ? 'Placing Order...' : `Place Order · ₹${grandTotal.toFixed(2)}`}
+                  {placing
+                    ? form.payment === 'razorpay'
+                      ? 'Opening Payment...'
+                      : 'Placing Order...'
+                    : form.payment === 'razorpay'
+                      ? `Pay ₹${grandTotal.toFixed(2)} via Razorpay`
+                      : `Place Order · ₹${grandTotal.toFixed(2)}`
+                  }
                 </button>
+
+                {form.payment === 'razorpay' && (
+                  <p className='text-center text-stone-400 text-xs mt-3'>
+                    🔒 Secured by Razorpay · SSL Encrypted
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          {/* Right Column: Order Summary */}
+          {/* Order Summary Sidebar */}
           <div className='lg:col-span-2'>
             <div className='bg-white rounded-3xl border border-stone-100 p-6 shadow-sm sticky top-24'>
               <h3 className='font-bold text-stone-900 text-lg font-serif mb-5'>Order Summary</h3>
@@ -375,6 +665,7 @@ const displayItems = items.map(item => {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

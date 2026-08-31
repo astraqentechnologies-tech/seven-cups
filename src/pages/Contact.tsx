@@ -47,8 +47,8 @@ export default function Contact() {
             </div>
 
             {[
-              { icon: Mail, label: 'Email Us', value: 'hello@luminarytea.com', sub: 'We reply within 24 hours' },
-              { icon: Phone, label: 'Call Us', value: '+1 (555) 234-5678', sub: 'Mon–Fri, 9am–6pm PST' },
+              { icon: Mail, label: 'Email Us', value: 'sevencupsofficial@gmail.com', sub: 'We reply within 24 hours' },
+              { icon: Phone, label: 'Call Us', value: '+91 7980505146', sub: 'Mon–Fri, 9am–6pm PST' },
               { icon: MapPin, label: 'Visit Us', value: '42 Garden Lane', sub: 'San Francisco, CA 94102' },
               { icon: Clock, label: 'Business Hours', value: 'Mon–Fri: 9am–6pm', sub: 'Sat: 10am–4pm PST' },
             ].map((info, i) => (
@@ -181,8 +181,8 @@ export default function Contact() {
         <div className="mt-16 bg-white rounded-3xl border border-stone-100 overflow-hidden shadow-sm h-72 flex items-center justify-center">
           <div className="text-center">
             <MapPin className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-            <p className="text-stone-600 font-semibold">42 Garden Lane, San Francisco, CA 94102</p>
-            <p className="text-stone-400 text-sm mt-1">Near Union Square, open Mon–Sat</p>
+            <p className="text-stone-600 font-semibold">S S Enterprise,  100, Dewangazi Road</p>
+            <p className="text-stone-400 text-sm mt-1">Bally – Howrah, West Bengal – 711201, India</p>
           </div>
         </div>
       </div>
