@@ -49,8 +49,7 @@ export default function Contact() {
             {[
               { icon: Mail, label: 'Email Us', value: 'sevencupsofficial@gmail.com', sub: 'We reply within 24 hours' },
               { icon: Phone, label: 'Call Us', value: '+91 7980505146', sub: 'Mon–Fri, 9am–6pm PST' },
-              { icon: MapPin, label: 'Visit Us', value: '42 Garden Lane', sub: 'San Francisco, CA 94102' },
-              { icon: Clock, label: 'Business Hours', value: 'Mon–Fri: 9am–6pm', sub: 'Sat: 10am–4pm PST' },
+              { icon: MapPin, label: 'Visit Us', value: 'S S Enterprise, 100, Dewangazi Road,', sub: 'Bally – Howrah, West Bengal – 711201, India' },
             ].map((info, i) => (
               <div key={i} className="flex items-start gap-4 bg-white rounded-2xl p-5 border border-stone-100 shadow-sm">
                 <div className="w-11 h-11 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
@@ -65,7 +64,7 @@ export default function Contact() {
             ))}
 
             <a
-              href="https://wa.me/15552345678"
+              href="https://wa.me/7980505146"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-4 rounded-2xl font-semibold transition-all w-full justify-center shadow-lg shadow-emerald-500/20"
