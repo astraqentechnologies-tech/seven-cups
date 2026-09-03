@@ -64,7 +64,7 @@ export default function Contact() {
             ))}
 
             <a
-              href="https://wa.me/7980505146"
+              href="https://wa.me/+917980505146"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-4 rounded-2xl font-semibold transition-all w-full justify-center shadow-lg shadow-emerald-500/20"
