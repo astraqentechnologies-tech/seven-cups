@@ -48,7 +48,7 @@ export default function Contact() {
 
             {[
               { icon: Mail, label: 'Email Us', value: 'sevencupsofficial@gmail.com', sub: 'We reply within 24 hours' },
-              { icon: Phone, label: 'Call Us', value: '+91 7980505146', sub: 'Mon–Fri, 9am–6pm PST' },
+              { icon: Phone, label: 'Call Us', value: '+91 7980505146' },
               { icon: MapPin, label: 'Visit Us', value: 'S S Enterprise, 100, Dewangazi Road,', sub: 'Bally – Howrah, West Bengal – 711201, India' },
             ].map((info, i) => (
               <div key={i} className="flex items-start gap-4 bg-white rounded-2xl p-5 border border-stone-100 shadow-sm">
