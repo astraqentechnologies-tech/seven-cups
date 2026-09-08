@@ -19,6 +19,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/logo.png";
+import AuthModal from "../pages/Auth"; // ← adjust path if your file lives elsewhere
 
 // ─── Nav links ────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
@@ -281,7 +282,8 @@ function SearchOverlay({ open, onClose }) {
 }
 
 // ─── User Menu ────────────────────────────────────────────────────────────────
-function UserMenu({ user }) {
+// CHANGED: now takes `onOpenAuth` instead of calling navigate("/auth")
+function UserMenu({ user, onOpenAuth }) {
   const navigate = useNavigate();
   const { signOut } = useAuth(); // ← logout → signOut
 
@@ -289,7 +291,7 @@ function UserMenu({ user }) {
 
   if (!user) {
     return (
-      <IconBtn onClick={() => navigate("/auth")} label="Login">
+      <IconBtn onClick={onOpenAuth} label="Login">
         <User className="w-[20px] h-[20px]" strokeWidth={1.6} />
       </IconBtn>
     );
@@ -354,7 +356,8 @@ function UserMenu({ user }) {
 }
 
 // ─── Mobile Drawer ────────────────────────────────────────────────────────────
-function MobileDrawer({ open, onClose, user }) {
+// CHANGED: now takes `onOpenAuth` instead of calling go("/auth")
+function MobileDrawer({ open, onClose, user, onOpenAuth }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { signOut } = useAuth(); // ← add this
@@ -459,7 +462,7 @@ function MobileDrawer({ open, onClose, user }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.35 }}
-                  onClick={() => go("/auth")}
+                  onClick={() => { onOpenAuth(); onClose(); }}
                   className="mt-2 px-4 py-3 rounded-xl text-sm font-bold text-white text-center"
                   style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
                   whileHover={{ scale: 1.02 }}
@@ -492,6 +495,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [wishPulse, setWishPulse] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false); // ← NEW: controls the login modal
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -548,7 +552,7 @@ export default function Header() {
             <IconBtn onClick={() => setSearchOpen(true)} label="Search" active={searchOpen}>
               <Search className="w-[20px] h-[20px]" strokeWidth={1.6} />
             </IconBtn>
-            <UserMenu user={displayUser} />
+            <UserMenu user={displayUser} onOpenAuth={() => setAuthOpen(true)} />
             <IconBtn onClick={() => navigate("/cart")} label="Cart" badge={itemCount}>
               <ShoppingCart className="w-[20px] h-[20px]" strokeWidth={1.6} />
             </IconBtn>
@@ -575,7 +579,7 @@ export default function Header() {
               <Search className="w-[22px] h-[22px]" strokeWidth={1.6} />
             </IconBtn>
 
-            <UserMenu user={displayUser} />
+            <UserMenu user={displayUser} onOpenAuth={() => setAuthOpen(true)} />
 
             <IconBtn onClick={handleWish} label="Wishlist">
               <motion.span
@@ -604,7 +608,15 @@ export default function Header() {
       </motion.header>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)} user={displayUser} />
+      <MobileDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        user={displayUser}
+        onOpenAuth={() => setAuthOpen(true)}
+      />
+
+      {/* NEW: login popup, mounted once here so it works from anywhere in the header */}
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

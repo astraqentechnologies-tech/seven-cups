@@ -177,11 +177,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // FIXED: previously this only cleared local state when the bulk
+  // DELETE /cart call succeeded. If that single request failed for any
+  // reason (wrong route, server error, etc.) the cart silently stayed
+  // full even after a successful order. Now it falls back to removing
+  // items one by one (the same endpoint the trash-icon button already
+  // uses successfully), and always resyncs with the server afterwards
+  // instead of just assuming the local state is right.
   const clearCart = async () => {
     if (!token) {
       setLocalItems([]);
       return;
     }
+
     try {
       const res = await fetch(`${API_BASE_URL}/cart`, {
         method: 'DELETE',
@@ -190,9 +198,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
           'Accept': 'application/json'
         }
       });
-      if (res.ok) setItems([]);
+
+      if (!res.ok) {
+        console.warn('Bulk cart clear failed, falling back to per-item delete');
+        await Promise.all(
+          items.map(item =>
+            fetch(`${API_BASE_URL}/cart/${item.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+              }
+            }).catch(() => null)
+          )
+        );
+      }
     } catch (err) {
       console.error('Error clearing cart:', err);
+    } finally {
+      // Always trust the server's final state instead of optimistically
+      // setting items to [] — this is what actually prevents the stale
+      // "order placed but cart still full" bug.
+      await fetchCart();
     }
   };
 
